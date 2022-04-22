@@ -980,6 +980,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusty-shared-tracing"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "sentry",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "rusty-tado"
 version = "0.1.0"
 dependencies = [
@@ -987,9 +997,8 @@ dependencies = [
  "async-std",
  "clap",
  "reqwest",
- "sentry",
+ "rusty-shared-tracing",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

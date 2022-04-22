@@ -1,0 +1,10 @@
+[package]
+name = "rusty-shared-tracing"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.57"
+sentry = { version = "0.25.0", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic", "anyhow", "tracing"] }
+tracing = "0.1.34"
+tracing-subscriber = { version = "0.3.11", features = ["fmt", "env-filter"] }
