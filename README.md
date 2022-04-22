@@ -20,3 +20,7 @@ Each host is running a `redis-server` and [`redis-sentinel`](https://redis.io/do
 Each host is running a set of microservices – ideally, all of them – via `systemd`. The microservices should use [Redis consumer groups](https://redis.io/docs/manual/data-types/streams/#consumer-groups) to ensure reliable processing of messages.
 
 The microservices are monitored via Sentry and `journald`.
+
+## Microservices
+
+- [tado°](rusty-tado)
