@@ -1,5 +1,5 @@
 [![Last commit](https://img.shields.io/github/last-commit/eigenein/rusty-home?logo=github)](https://github.com/eigenein/rusty-home/commits/master)
-[![Build status](https://github.com/eigenein/rusty-home/actions/workflows/check.yml/badge.svg)](https://github.com/eigenein/rusty-home/actions)
+[![Build status](https://github.com/eigenein/rusty-home/actions/workflows/check.yaml/badge.svg)](https://github.com/eigenein/rusty-home/actions)
 
 # 🏚 `rusty-home`
 
