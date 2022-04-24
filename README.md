@@ -24,3 +24,10 @@ The microservices are monitored via Sentry and `journald`.
 ## Microservices
 
 - [tado°](rusty-tado)
+- [Tractive](rusty-tractive)
+
+## Installation
+
+```shell
+cargo install --git https://github.com/eigenein/rusty-home.git --locked
+```

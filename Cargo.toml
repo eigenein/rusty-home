@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "rusty-tado",
     "rusty-shared-tracing",
+    "rusty-tado",
+    "rusty-tractive",
 ]
