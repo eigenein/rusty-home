@@ -137,7 +137,10 @@ impl Microservice {
                 false,
                 None,
                 format!("{}-0", hardware.timestamp.timestamp_millis()),
-                vec![("battery_level", hardware.battery_level.to_string())],
+                vec![
+                    ("ts", hardware.timestamp.timestamp().to_string()),
+                    ("battery", hardware.battery_level.to_string()),
+                ],
             )
             .await
             .or_else(ignore_unknown_error)
@@ -162,9 +165,9 @@ impl Microservice {
                 None,
                 format!("{}-0", position.timestamp.timestamp_millis()),
                 vec![
-                    ("timestamp", position.timestamp.timestamp().to_string()),
-                    ("latitude", latitude.to_string()),
-                    ("longitude", longitude.to_string()),
+                    ("ts", position.timestamp.timestamp().to_string()),
+                    ("lat", latitude.to_string()),
+                    ("lon", longitude.to_string()),
                     ("accuracy", position.accuracy.to_string()),
                     ("course", position.course.to_string()),
                 ],
