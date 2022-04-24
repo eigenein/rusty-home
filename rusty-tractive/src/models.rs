@@ -1,17 +1,36 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
+use serde_with::{serde_as, DurationSeconds};
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[must_use]
+#[derive(Debug, Deserialize)]
 #[serde(tag = "message")]
 enum Message {
+    #[serde(rename = "handshake")]
+    Handshake(HandshakeMessage),
+
     #[serde(rename = "keep-alive")]
     KeepAlive(KeepAliveMessage),
+
+    #[serde(rename = "tracker_status")]
+    TrackerStatus(TrackerStatusMessage),
 
     #[serde(other)]
     Other,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[serde_as]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+struct HandshakeMessage {
+    channel_id: String,
+
+    #[serde_as(as = "DurationSeconds<i64>")]
+    keep_alive_ttl: Duration,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 struct KeepAliveMessage {
     #[serde(rename = "channelId")]
     channel_id: String,
@@ -23,25 +42,111 @@ struct KeepAliveMessage {
     timestamp: DateTime<Utc>,
 }
 
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+struct TrackerStatusMessage {
+    tracker_id: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::Result;
+
+    use anyhow::{bail, Result};
     use chrono::TimeZone;
+    use serde_json::from_str;
+
+    #[test]
+    fn test_handshake_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"handshake","persistant":false,"channel_id":"channel_censored","keep_alive_ttl":600}"#,
+        )?;
+        match message {
+            Message::Handshake(message) => {
+                assert_eq!(message.channel_id, "channel_censored");
+                assert_eq!(message.keep_alive_ttl, Duration::seconds(600));
+                Ok(())
+            }
+            _ => bail!("incorrect message type: {:?}", message),
+        }
+    }
 
     #[test]
     fn test_keep_alive_ok() -> Result<()> {
-        let message: Message = serde_json::from_str(
+        let message: Message = from_str(
             // language=json
             r#"{"message":"keep-alive","channelId":"channel_censored","keepAlive":1650805106}"#,
         )?;
-        assert_eq!(
-            message,
-            Message::KeepAlive(KeepAliveMessage {
-                channel_id: "channel_censored".to_string(),
-                timestamp: Utc.timestamp(1650805106, 0),
-            }),
-        );
-        Ok(())
+        match message {
+            Message::KeepAlive(message) => {
+                assert_eq!(message.channel_id, "channel_censored");
+                assert_eq!(message.timestamp, Utc.timestamp(1650805106, 0));
+                Ok(())
+            }
+            _ => bail!("incorrect message type: {:?}", message),
+        }
+    }
+
+    #[test]
+    fn test_tracker_status_initial_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","position":{"time":1650802621,"latlong":[1.0,2.0],"sensor_used":"GPS","accuracy":2,"speed":0.2,"course":346,"time_rcvd":1650802623},"hardware":{"time":1650802598,"battery_level":55,"temperature_state":"NORMAL","power_saving_zone_id":null,"clip_mounted_state":false},"charging_state":"NOT_CHARGING","battery_state":"REGULAR","led_control":{"active":false,"timeout":300,"remaining":0,"pending":false,"reconnecting":false},"buzzer_control":{"active":false,"timeout":300,"remaining":0,"pending":false,"reconnecting":false},"live_tracking":{"active":false,"timeout":300,"remaining":0,"pending":false,"reconnecting":false},"pos_request":{"active":false,"timeout":300,"remaining":0,"pending":false,"reconnecting":false}}"#,
+        )?;
+        match message {
+            Message::TrackerStatus(message) => {
+                assert_eq!(message.tracker_id, "CENSORED");
+                Ok(())
+            }
+            _ => bail!("incorrect message type: {:?}", message),
+        }
+    }
+
+    #[test]
+    fn test_tracker_status_regular_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","position":{"time":1650806275,"latlong":[1.0,2.0],"sensor_used":"GPS","accuracy":22,"course":244,"altitude":-36,"time_rcvd":1650806276},"hardware":{"time":1650806276,"battery_level":51,"temperature_state":"NORMAL","power_saving_zone_id":null,"clip_mounted_state":false},"charging_state":"NOT_CHARGING","battery_state":"REGULAR"}"#,
+        )?;
+        match message {
+            Message::TrackerStatus(message) => {
+                assert_eq!(message.tracker_id, "CENSORED");
+                Ok(())
+            }
+            _ => bail!("incorrect message type: {:?}", message),
+        }
+    }
+
+    #[test]
+    fn test_tracker_status_live_tracking_active_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","charging_state":"NOT_CHARGING","battery_state":"REGULAR","live_tracking":{"active":true,"timeout":300,"remaining":299,"pending":false,"reconnecting":false,"started_at":1650802678}}"#,
+        )?;
+        match message {
+            Message::TrackerStatus(message) => {
+                assert_eq!(message.tracker_id, "CENSORED");
+                Ok(())
+            }
+            _ => {
+                bail!("incorrect message type: {:?}", message)
+            }
+        }
+    }
+
+    #[test]
+    fn test_tracker_status_live_tracking_inactive_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","charging_state":"NOT_CHARGING","battery_state":"REGULAR","live_tracking":{"active":false,"timeout":300,"remaining":0,"pending":false,"reconnecting":false}}"#,
+        )?;
+        match message {
+            Message::TrackerStatus(message) => {
+                assert_eq!(message.tracker_id, "CENSORED");
+                Ok(())
+            }
+            _ => bail!("incorrect message type: {:?}", message),
+        }
     }
 }
