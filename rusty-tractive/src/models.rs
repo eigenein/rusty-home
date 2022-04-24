@@ -3,6 +3,16 @@ use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
 #[must_use]
+#[derive(Deserialize)]
+pub struct Token {
+    pub user_id: String,
+    pub access_token: String,
+
+    #[serde(deserialize_with = "chrono::serde::ts_seconds::deserialize")]
+    pub expires_at: DateTime<Utc>,
+}
+
+#[must_use]
 #[derive(Debug, Deserialize)]
 #[serde(tag = "message")]
 enum Message {
