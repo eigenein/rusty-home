@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use rusty_shared_opts::{redis, sentry};
+use rusty_shared_opts::{heartbeat, redis, sentry};
 
 #[derive(Parser)]
 #[clap(author, version, about)]
@@ -10,6 +10,9 @@ pub struct Opts {
 
     #[clap(flatten)]
     pub sentry: sentry::Opts,
+
+    #[clap(flatten)]
+    pub heartbeat: heartbeat::Opts,
 
     /// Tractive account email
     #[clap(long, env = "RUSTY_TRACTIVE_EMAIL")]

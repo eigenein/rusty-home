@@ -18,4 +18,5 @@ serde_with = { version = "1.13.0", features = ["chrono"] }
 tracing = "0.1.34"
 
 rusty-shared-opts = { path = "../rusty-shared-opts" }
+rusty-shared-redis = { path = "../rusty-shared-redis" }
 rusty-shared-tracing = { path = "../rusty-shared-tracing" }

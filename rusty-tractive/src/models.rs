@@ -25,8 +25,8 @@ pub enum Message {
     #[serde(rename = "tracker_status")]
     TrackerStatus(TrackerStatusMessage),
 
-    #[serde(rename = "activity_update")]
-    ActivityUpdate,
+    #[serde(other)]
+    Other,
 }
 
 #[serde_as]
@@ -66,12 +66,19 @@ pub struct TrackerStatusMessage {
 #[derive(Debug, Deserialize)]
 pub struct Hardware {
     pub battery_level: u8,
+
+    #[serde(
+        rename = "time",
+        deserialize_with = "chrono::serde::ts_seconds::deserialize"
+    )]
+    pub timestamp: DateTime<Utc>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Position {
-    pub accuracy: f32,
+    pub accuracy: u32,
+    pub course: u16,
     pub latlong: (f64, f64),
 
     #[serde(

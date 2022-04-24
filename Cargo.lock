@@ -1495,7 +1495,16 @@ dependencies = [
  "anyhow",
  "clap",
  "fred",
+ "reqwest",
  "sentry",
+ "tracing",
+]
+
+[[package]]
+name = "rusty-shared-redis"
+version = "0.1.0"
+dependencies = [
+ "fred",
  "tracing",
 ]
 
@@ -1533,6 +1542,7 @@ dependencies = [
  "futures",
  "reqwest",
  "rusty-shared-opts",
+ "rusty-shared-redis",
  "rusty-shared-tracing",
  "serde",
  "serde_json",

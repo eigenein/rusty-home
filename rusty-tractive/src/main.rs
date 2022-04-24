@@ -21,6 +21,7 @@ async fn main() -> Result<()> {
     let microservice = Microservice {
         redis,
         api: Api::new()?,
+        heartbeat: opts.heartbeat.get_heartbeat()?,
         email: opts.email,
         password: opts.password,
     };

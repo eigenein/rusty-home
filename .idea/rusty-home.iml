@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/rusty-shared-opts/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rusty-shared-redis/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rusty-shared-tracing/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rusty-tado/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rusty-tractive/src" isTestSource="false" />
