@@ -189,4 +189,19 @@ mod tests {
             _ => bail!("incorrect message type: {:?}", message),
         }
     }
+
+    #[test]
+    fn test_tracker_status_phone_sensor_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","position":{"time":1650837751,"latlong":[1.0,2.0],"sensor_used":"PHONE","accuracy":20,"speed":0.1,"course":314,"altitude":44,"nearby_user_id":"censored","time_rcvd":1650837757},"hardware":{"time":1650837553,"battery_level":96,"temperature_state":"NORMAL","power_saving_zone_id":null,"clip_mounted_state":false},"charging_state":"NOT_CHARGING","battery_state":"FULL"}"#,
+        )?;
+        match message {
+            Message::TrackerStatus(message) => {
+                assert_eq!(message.tracker_id, "CENSORED");
+                Ok(())
+            }
+            _ => bail!("incorrect message type: {:?}", message),
+        }
+    }
 }
