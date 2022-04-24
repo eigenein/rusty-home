@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "rusty-shared-opts",
     "rusty-shared-tracing",
     "rusty-tado",
     "rusty-tractive",

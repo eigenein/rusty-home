@@ -2,6 +2,7 @@
 name = "rusty-tado"
 version = "0.1.0"
 edition = "2021"
+description = "Connects Rusty Home to tado°"
 
 [dependencies]
 anyhow = "1.0.57"

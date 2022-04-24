@@ -1,0 +1,10 @@
+[package]
+name = "rusty-shared-opts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.57"
+clap = { version = "3.1.12", features = ["derive", "env"] }
+fred = { version = "5.0.0-beta.1", default-features = false }
+tracing = "0.1.34"
