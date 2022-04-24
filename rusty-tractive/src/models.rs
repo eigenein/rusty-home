@@ -15,7 +15,7 @@ pub struct Token {
 #[must_use]
 #[derive(Debug, Deserialize)]
 #[serde(tag = "message")]
-enum Message {
+pub enum Message {
     #[serde(rename = "handshake")]
     Handshake(HandshakeMessage),
 
@@ -25,37 +25,60 @@ enum Message {
     #[serde(rename = "tracker_status")]
     TrackerStatus(TrackerStatusMessage),
 
-    #[serde(other)]
-    Other,
+    #[serde(rename = "activity_update")]
+    ActivityUpdate,
 }
 
 #[serde_as]
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-struct HandshakeMessage {
-    channel_id: String,
+pub struct HandshakeMessage {
+    pub channel_id: String,
 
     #[serde_as(as = "DurationSeconds<i64>")]
-    keep_alive_ttl: Duration,
+    pub keep_alive_ttl: Duration,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-struct KeepAliveMessage {
+pub struct KeepAliveMessage {
     #[serde(rename = "channelId")]
-    channel_id: String,
+    pub channel_id: String,
 
     #[serde(
         rename = "keepAlive",
         deserialize_with = "chrono::serde::ts_seconds::deserialize"
     )]
-    timestamp: DateTime<Utc>,
+    pub timestamp: DateTime<Utc>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-struct TrackerStatusMessage {
-    tracker_id: String,
+pub struct TrackerStatusMessage {
+    pub tracker_id: String,
+
+    pub hardware: Option<Hardware>,
+
+    pub position: Option<Position>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+pub struct Hardware {
+    pub battery_level: u8,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+pub struct Position {
+    pub accuracy: f32,
+    pub latlong: (f64, f64),
+
+    #[serde(
+        rename = "time",
+        deserialize_with = "chrono::serde::ts_seconds::deserialize"
+    )]
+    pub timestamp: DateTime<Utc>,
 }
 
 #[cfg(test)]

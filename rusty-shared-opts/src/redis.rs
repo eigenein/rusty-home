@@ -5,6 +5,7 @@ use clap::Parser;
 use fred::clients::RedisClient;
 use fred::interfaces::ClientLike;
 use fred::types::{ReconnectPolicy, RedisConfig, ServerConfig};
+use tracing::{info, instrument};
 
 #[derive(Parser)]
 pub struct Opts {
@@ -12,7 +13,7 @@ pub struct Opts {
     #[clap(long = "redis-host", env = "RUSTY_HOME_REDIS_HOST", conflicts_with_all = &["service-name", "sentinels"])]
     host: Option<SocketAddr>,
 
-    /// Redis host for a centralized configuration
+    /// Redis Sentinel host(s) for a sentinel configuration
     #[clap(
         long = "redis-sentinel",
         env = "RUSTY_HOME_REDIS_SENTINELS",
@@ -31,8 +32,8 @@ pub struct Opts {
 }
 
 impl Opts {
-    #[tracing::instrument(level = "info", skip_all)]
-    pub async fn get_client(self) -> Result<RedisClient> {
+    #[instrument(level = "info", skip_all)]
+    pub async fn connect(self) -> Result<RedisClient> {
         let config = RedisConfig {
             server: match self.service_name {
                 None => ServerConfig::Centralized {
@@ -55,12 +56,12 @@ impl Opts {
         let client = RedisClient::new(config);
 
         client.connect(Some(policy));
-        tracing::info!("awaiting connection…");
+        info!("awaiting connection…");
         client
             .wait_for_connect()
             .await
             .context("failed to connect to Redis")?;
-        tracing::info!("connected to Redis");
+        info!("connected to Redis");
 
         Ok(client)
     }

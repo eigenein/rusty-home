@@ -1,8 +1,13 @@
-use crate::models::Token;
-use anyhow::{Context, Result};
+use std::io::ErrorKind;
+
+use anyhow::{Context, Error, Result};
+use futures::{AsyncBufReadExt, Stream, TryStreamExt};
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client};
 use serde_json::json;
+use tracing::{info, instrument, warn};
+
+use crate::models::{Message, Token};
 
 const USER_AGENT: &str = concat!(
     "rusty-tractive/",
@@ -12,13 +17,11 @@ const USER_AGENT: &str = concat!(
 
 #[must_use]
 pub struct Api {
-    email: String,
-    password: String,
     client: Client,
 }
 
 impl Api {
-    pub fn new(email: impl Into<String>, password: impl Into<String>) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert(
             header::CONTENT_TYPE,
@@ -38,22 +41,17 @@ impl Api {
             .user_agent(USER_AGENT)
             .build()?;
 
-        Ok(Self {
-            email: email.into(),
-            password: password.into(),
-            client,
-        })
+        Ok(Self { client })
     }
 
-    #[tracing::instrument(level = "info", skip_all)]
-    pub async fn authenticate(&mut self) -> Result<()> {
-        tracing::info!("authenticating…");
+    #[instrument(level = "info", skip_all, fields(email = email))]
+    pub async fn authenticate(&self, email: &str, password: &str) -> Result<Token> {
         let token: Token = self
             .client
             .post("https://graph.tractive.com/3/auth/token")
             .json(&json! ({
-                "platform_email": self.email,
-                "platform_token": self.password,
+                "platform_email": email,
+                "platform_token": password,
                 "grant_type": "tractive",
             }))
             .send()
@@ -62,10 +60,40 @@ impl Api {
             .json()
             .await
             .context("failed to deserialize the authentication token")?;
-        tracing::info!(
+        info!(
             expires_at = token.expires_at.to_string().as_str(),
             "authenticated",
         );
-        Ok(())
+        Ok(token)
+    }
+
+    #[instrument(level = "debug", skip_all, fields(user_id = user_id))]
+    pub async fn get_messages(
+        &self,
+        user_id: &str,
+        access_token: &str,
+    ) -> Result<impl Stream<Item = Result<Message>>> {
+        let stream = self
+            .client
+            .post("https://channel.tractive.com/3/channel")
+            .header("X-Tractive-User", user_id)
+            .header("Authorization", format!("Bearer {}", access_token))
+            .send()
+            .await?
+            .bytes_stream()
+            .map_err(|error| ::std::io::Error::new(ErrorKind::Other, error))
+            .into_async_read()
+            .lines()
+            .try_filter_map(|line| async move {
+                match serde_json::from_str(&line).context("failed to deserialize") {
+                    Ok(message) => Ok(Some(message)),
+                    Err(error) => {
+                        warn!("{:#}: {}", error, line);
+                        Ok(None)
+                    }
+                }
+            })
+            .map_err(Error::from);
+        Ok(stream)
     }
 }

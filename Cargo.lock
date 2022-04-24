@@ -1495,6 +1495,7 @@ dependencies = [
  "anyhow",
  "clap",
  "fred",
+ "sentry",
  "tracing",
 ]
 
@@ -1529,6 +1530,7 @@ dependencies = [
  "chrono",
  "clap",
  "fred",
+ "futures",
  "reqwest",
  "rusty-shared-opts",
  "rusty-shared-tracing",
