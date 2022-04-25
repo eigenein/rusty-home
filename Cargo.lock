@@ -1553,6 +1553,17 @@ dependencies = [
 [[package]]
 name = "rusty-tractive-telegram-bot"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "clap",
+ "fred",
+ "reqwest",
+ "rusty-shared-opts",
+ "rusty-shared-redis",
+ "rusty-shared-tracing",
+ "tracing",
+]
 
 [[package]]
 name = "ryu"

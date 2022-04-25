@@ -2,7 +2,16 @@
 name = "rusty-tractive-telegram-bot"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "🐈📲 Connects Tractive to Telegram"
 
 [dependencies]
+anyhow = "1.0.57"
+async-std = { version = "1.11.0", features = ["attributes", "tokio1"] }
+clap = { version = "3.1.12", features = ["cargo", "derive", "env"] }
+fred = { version = "5.0.0-beta.1", default-features = false }
+reqwest = { version = "0.11.10", default-features = false, features = ["rustls-tls", "json"] }
+tracing = "0.1.34"
+
+rusty-shared-opts = { path = "../rusty-shared-opts" }
+rusty-shared-redis = { path = "../rusty-shared-redis" }
+rusty-shared-tracing = { path = "../rusty-shared-tracing" }
