@@ -3,7 +3,7 @@
 
 # 🏚 `rusty-home`
 
-This is an educational project.
+This is a self-educational pet project.
 
 I'm attempting to make a set highly-available microservices that I could deploy onto 3x of mine Raspberry Pi Zero W. Each microservice is going ot focus on a particular task. The microservices would exchange messages with each other through [Redis streams](https://redis.io/docs/manual/data-types/streams/).
 
