@@ -26,6 +26,9 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v1
 
+      - name: Set up Mold
+        uses: rui314/setup-mold@v1
+
       - name: Test
         uses: actions-rs/cargo@v1
         with:
