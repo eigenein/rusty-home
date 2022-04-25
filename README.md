@@ -21,10 +21,11 @@ Each host is running a set of microservices – ideally, all of them – via `sy
 
 The microservices are monitored via Sentry and `journald`.
 
-## Microservices
+## Available microservices
 
-- [tado°](rusty-tado)
-- [Tractive](rusty-tractive)
+- [ ] [tado°](https://www.tado.com/)
+- [x] [Tractive](https://tractive.com/)
+- [ ] [Tractive Telegram Bot](rusty-tractive-telegram-bot)
 
 ## Installation
 
