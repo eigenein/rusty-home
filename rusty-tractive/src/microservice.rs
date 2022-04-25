@@ -114,13 +114,12 @@ impl Microservice {
 
     #[instrument(level = "info", skip_all, fields(tracker_id = payload.tracker_id.as_str()))]
     async fn on_tracker_status(&self, payload: TrackerStatusMessage) -> Result<()> {
+        let tracker_id = payload.tracker_id.to_lowercase();
         if let Some(hardware) = payload.hardware {
-            self.on_hardware_update(&payload.tracker_id, hardware)
-                .await?;
+            self.on_hardware_update(&tracker_id, hardware).await?;
         }
         if let Some(position) = payload.position {
-            self.on_position_update(&payload.tracker_id, position)
-                .await?;
+            self.on_position_update(&tracker_id, position).await?;
         }
         Ok(())
     }

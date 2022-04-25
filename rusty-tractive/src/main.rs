@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
         redis,
         api: Api::new()?,
         heartbeat: opts.heartbeat.get_heartbeat()?,
-        email: opts.email,
+        email: opts.email.to_lowercase(),
         password: opts.password,
     };
     microservice.run().await
