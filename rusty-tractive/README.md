@@ -1,6 +1,6 @@
 # 🐈 `rusty-tractive`
 
-Connects Rusty Home to [Tractive](https://tractive.com/).
+Integrates [Tractive](https://tractive.com/).
 
 ## Streams
 

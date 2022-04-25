@@ -23,8 +23,8 @@ The microservices are monitored via Sentry and `journald`.
 
 ## Available microservices
 
-- [ ] [tado°](https://www.tado.com/)
-- [x] [Tractive](https://tractive.com/)
+- [ ] [tado°](rusty-tado)
+- [x] [Tractive](rusty-tractive)
 - [ ] [Tractive Telegram Bot](rusty-tractive-telegram-bot)
 
 ## Installation

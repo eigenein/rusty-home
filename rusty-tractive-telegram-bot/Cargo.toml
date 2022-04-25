@@ -2,7 +2,7 @@
 name = "rusty-tractive-telegram-bot"
 version = "0.1.0"
 edition = "2021"
-description = "🐈📲 Connects Tractive to Telegram"
+description = "🐈📲 Connects Rusty Tractive to Telegram"
 
 [dependencies]
 anyhow = "1.0.57"
