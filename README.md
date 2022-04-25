@@ -31,3 +31,5 @@ The microservices are monitored via Sentry and `journald`.
 ```shell
 cargo install --git https://github.com/eigenein/rusty-home.git --locked rusty-tractive rusty-tado
 ```
+
+I suggest that you have at least 1 GB of RAM or swap space in order to compile it from source. On Raspberry Pi Zero W setting `CONF_SWAPSIZE=1024` in `/etc/dphys-swapfile` seems to work fine.

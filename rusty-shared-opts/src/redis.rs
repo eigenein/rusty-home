@@ -18,7 +18,8 @@ pub struct Opts {
         long = "redis-sentinel",
         env = "RUSTY_HOME_REDIS_SENTINELS",
         conflicts_with = "host",
-        requires = "service-name"
+        requires = "service-name",
+        use_value_delimiter = true
     )]
     sentinels: Option<Vec<SocketAddr>>,
 
