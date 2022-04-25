@@ -9,47 +9,48 @@ use tracing::{info, instrument};
 
 #[derive(Parser)]
 pub struct Opts {
-    /// Redis host for a centralized configuration
-    #[clap(long = "redis-host", env = "RUSTY_HOME_REDIS_HOST", conflicts_with_all = &["service-name", "sentinels"])]
-    host: Option<SocketAddr>,
-
-    /// Redis Sentinel host(s) for a sentinel configuration
+    /// One address is treated as Redis Server address, multiple addresses – as Sentinel addresses
     #[clap(
-        long = "redis-sentinel",
-        env = "RUSTY_HOME_REDIS_SENTINELS",
-        conflicts_with = "host",
-        requires = "service-name",
+        long = "redis-server",
+        env = "RUSTY_HOME_REDIS_ADDRESSES",
+        default_value = "127.0.0.1:6379",
         use_value_delimiter = true
     )]
-    sentinels: Option<Vec<SocketAddr>>,
+    addresses: Vec<SocketAddr>,
 
-    /// Redis Sentinel master name, e.g. `mymaster`
+    /// Redis Sentinel master name
     #[clap(
         long = "redis-service-name",
         env = "RUSTY_HOME_REDIS_SERVICE_NAME",
-        requires = "sentinels"
+        default_value = "mymaster"
     )]
-    service_name: Option<String>,
+    service_name: String,
 }
 
 impl Opts {
-    #[instrument(level = "info", skip_all)]
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(n_addresses = self.addresses.len(), service_name = self.service_name.as_str()),
+    )]
     pub async fn connect(self) -> Result<RedisClient> {
         let config = RedisConfig {
-            server: match self.service_name {
-                None => ServerConfig::Centralized {
-                    host: self.host.unwrap().ip().to_string(),
-                    port: self.host.unwrap().port(),
-                },
-                Some(service_name) => ServerConfig::Sentinel {
-                    service_name,
+            server: if self.addresses.len() == 1 {
+                info!("assuming centralized configuration");
+                ServerConfig::Centralized {
+                    host: self.addresses[0].ip().to_string(),
+                    port: self.addresses[0].port(),
+                }
+            } else {
+                info!("assuming Sentinel configuration");
+                ServerConfig::Sentinel {
+                    service_name: self.service_name,
                     hosts: self
-                        .sentinels
-                        .unwrap()
+                        .addresses
                         .into_iter()
                         .map(|address| (address.ip().to_string(), address.port()))
                         .collect(),
-                },
+                }
             },
             ..Default::default()
         };
