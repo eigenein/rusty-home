@@ -1490,10 +1490,9 @@ checksum = "f2cc38e8fa666e2de3c4aba7edeb5ffc5246c1c2ed0e3d17e560aeeba736b23f"
 
 [[package]]
 name = "rusty-shared-opts"
-version = "1.1.0"
+version = "2.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "clap",
  "fred",
  "reqwest",
