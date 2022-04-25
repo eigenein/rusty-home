@@ -124,11 +124,11 @@ impl Microservice {
         Ok(())
     }
 
-    #[instrument(level = "info", skip_all, fields(tracker_id = tracker_id))]
+    #[instrument(level = "info", skip_all)]
     async fn on_hardware_update(&self, tracker_id: &str, hardware: Hardware) -> Result<()> {
         info!(
             timestamp = hardware.timestamp.to_string().as_str(),
-            hardware.battery_level = hardware.battery_level,
+            battery_level = hardware.battery_level,
             "⌚️",
         );
         self.redis
@@ -147,7 +147,7 @@ impl Microservice {
             .context("failed to push the hardware stream entry")
     }
 
-    #[instrument(level = "info", skip_all, fields(tracker_id = tracker_id))]
+    #[instrument(level = "info", skip_all)]
     async fn on_position_update(&self, tracker_id: &str, position: Position) -> Result<()> {
         let (latitude, longitude) = position.latlong;
         info!(
