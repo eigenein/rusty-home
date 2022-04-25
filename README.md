@@ -19,7 +19,9 @@ Each host is running a `redis-server` and [`redis-sentinel`](https://redis.io/do
 
 Each host is running a set of microservices – ideally, all of them – via `systemd`. The microservices should use [Redis consumer groups](https://redis.io/docs/manual/data-types/streams/#consumer-groups) to ensure reliable processing of messages.
 
-The microservices are monitored via Sentry and `journald`.
+- Monitored via [Sentry](https://sentry.io/)
+- Logs are handled by `journald`
+- Configuration is synced by [Syncthing](https://syncthing.net/)
 
 ## Available microservices
 
@@ -30,6 +32,7 @@ The microservices are monitored via Sentry and `journald`.
 ## Installation
 
 ```shell
+# Of course, you can choose which binaries you'd like to install.
 cargo install --git https://github.com/eigenein/rusty-home.git --locked rusty-tractive rusty-tado
 ```
 
