@@ -1532,7 +1532,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "async-std",
@@ -1549,6 +1549,10 @@ dependencies = [
  "serde_with",
  "tracing",
 ]
+
+[[package]]
+name = "rusty-tractive-telegram-bot"
+version = "0.1.0"
 
 [[package]]
 name = "ryu"

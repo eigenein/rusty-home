@@ -56,7 +56,9 @@ impl Api {
             }))
             .send()
             .await
-            .context("authentication request failed")?
+            .context("failed to send the authentication request")?
+            .error_for_status()
+            .context("authentication failed")?
             .json()
             .await
             .context("failed to deserialize the authentication token")?;
@@ -79,7 +81,10 @@ impl Api {
             .header("X-Tractive-User", user_id)
             .header("Authorization", format!("Bearer {}", access_token))
             .send()
-            .await?
+            .await
+            .context("failed to send the channel request")?
+            .error_for_status()
+            .context("the channel request failed")?
             .bytes_stream()
             .map_err(|error| ::std::io::Error::new(ErrorKind::Other, error))
             .into_async_read()
