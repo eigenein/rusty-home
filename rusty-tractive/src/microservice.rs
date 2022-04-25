@@ -129,6 +129,7 @@ impl Microservice {
         info!(
             timestamp = hardware.timestamp.to_string().as_str(),
             hardware.battery_level = hardware.battery_level,
+            "⌚️",
         );
         self.redis
             .xadd(

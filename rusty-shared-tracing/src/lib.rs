@@ -7,7 +7,7 @@ pub fn init() -> Result<()> {
     tracing_subscriber::Registry::default()
         .with(sentry::integrations::tracing::layer())
         .with(EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?)
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer().without_time())
         .init();
     Ok(())
 }
