@@ -13,9 +13,9 @@ pub enum Response<T> {
     },
 }
 
-impl<T> Into<Result<T>> for Response<T> {
-    fn into(self) -> Result<T> {
-        match self {
+impl<T> From<Response<T>> for Result<T> {
+    fn from(response: Response<T>) -> Self {
+        match response {
             Response::Ok { result } => Ok(result),
             Response::Err {
                 error_code,
