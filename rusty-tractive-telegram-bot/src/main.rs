@@ -1,5 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
+use tracing::info;
+
+use rusty_shared_telegram::api::Api;
 
 use crate::opts::Opts;
 
@@ -11,7 +14,15 @@ async fn main() -> Result<()> {
     let _guard = opts.sentry.init();
     rusty_shared_tracing::init()?;
 
-    let redis = opts.redis.connect().await?;
+    let _redis = opts.redis.connect().await?;
+    let bot_api = Api::new(opts.bot_token)?;
+
+    for update in bot_api
+        .get_updates(std::time::Duration::from_secs(5))
+        .await?
+    {
+        info!("{:?}", update);
+    }
 
     Ok(())
 }

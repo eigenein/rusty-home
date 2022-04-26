@@ -2,6 +2,7 @@
 members = [
     "rusty-shared-opts",
     "rusty-shared-redis",
+    "rusty-shared-telegram",
     "rusty-shared-tracing",
     "rusty-tado",
     "rusty-tractive",

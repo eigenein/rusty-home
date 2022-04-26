@@ -1597,6 +1597,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusty-shared-telegram"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tracing",
+ "vergen",
+]
+
+[[package]]
 name = "rusty-shared-tracing"
 version = "0.1.1"
 dependencies = [
@@ -1636,6 +1648,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "tracing",
+ "vergen",
 ]
 
 [[package]]
@@ -1646,9 +1659,9 @@ dependencies = [
  "async-std",
  "clap",
  "fred",
- "reqwest",
  "rusty-shared-opts",
  "rusty-shared-redis",
+ "rusty-shared-telegram",
  "rusty-shared-tracing",
  "tracing",
 ]

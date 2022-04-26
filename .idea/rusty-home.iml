@@ -8,6 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/rusty-tado/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rusty-tractive/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rusty-tractive-telegram-bot/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rusty-shared-telegram/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
