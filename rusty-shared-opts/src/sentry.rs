@@ -1,5 +1,9 @@
+use std::borrow::Cow;
+
 use clap::Parser;
 use sentry::{ClientInitGuard, ClientOptions};
+
+use crate::git;
 
 #[derive(Parser)]
 pub struct Opts {
@@ -21,7 +25,7 @@ impl Opts {
         sentry::init((
             self.dsn,
             ClientOptions {
-                release: sentry::release_name!(),
+                release: Some(Cow::Borrowed(git::COMMIT_SHA_SHORT)),
                 traces_sample_rate: self.traces_sample_rate,
                 ..Default::default()
             },
