@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
-use tracing::instrument;
+use std::time::Instant;
+use tracing::{debug, instrument};
 
 use crate::models;
 
@@ -13,16 +14,24 @@ const USER_AGENT: &str = concat!(
     " (Rust; https://github.com/eigenein/rusty-home)"
 );
 
-pub struct Api {
+pub struct BotApi {
     client: Client,
     token: String,
+    timeout: std::time::Duration,
 }
 
-impl Api {
+impl BotApi {
     #[instrument(level = "debug", skip_all)]
-    pub fn new(token: String) -> Result<Self> {
-        let client = Client::builder().user_agent(USER_AGENT).build()?;
-        Ok(Self { client, token })
+    pub fn new(token: String, timeout: std::time::Duration) -> Result<Self> {
+        let client = Client::builder()
+            .user_agent(USER_AGENT)
+            .timeout(timeout)
+            .build()?;
+        Ok(Self {
+            client,
+            token,
+            timeout,
+        })
     }
 
     /// https://core.telegram.org/bots/api#getme
@@ -32,14 +41,42 @@ impl Api {
     }
 
     #[instrument(level = "debug", skip_all)]
-    pub async fn get_updates(&self, timeout: ::std::time::Duration) -> Result<Vec<models::Update>> {
-        self.call(
-            "getUpdates",
-            &json!({
+    pub async fn get_updates(
+        &self,
+        offset: i64,
+        timeout: std::time::Duration,
+    ) -> Result<Vec<models::Update>> {
+        let start_time = Instant::now();
+        let response = self
+            .client
+            .post(format!(
+                "https://api.telegram.org/bot{}/getUpdates",
+                self.token,
+            ))
+            .json(&json!({
+                "offset": offset,
                 "timeout": timeout.as_secs(),
-            }),
-        )
-        .await
+            }))
+            .timeout(self.timeout + timeout)
+            .send()
+            .await
+            .context("failed to send the `getUpdates` request")?;
+        if response.status() == StatusCode::CONFLICT {
+            let time_left = timeout - start_time.elapsed();
+            debug!(
+                sleep_time_secs = time_left.as_secs(),
+                "`getUpdates` polling conflict, will sleep for a while"
+            );
+            async_std::task::sleep(time_left).await;
+            return Ok(Vec::new());
+        }
+        response
+            .error_for_status()
+            .context("`getUpdates` request failed")?
+            .json::<models::Response<Vec<models::Update>>>()
+            .await
+            .context("failed to deserialize `getUpdates` response")?
+            .into()
     }
 
     #[instrument(level = "debug", skip_all, fields(method_name = method_name))]
@@ -56,12 +93,12 @@ impl Api {
             .json(body)
             .send()
             .await
-            .context("failed to send the request")?
+            .with_context(|| format!("failed to send the `{}` request", method_name))?
             .error_for_status()
-            .context("HTTP request failed")?
+            .with_context(|| format!("`{}` request failed", method_name))?
             .json::<models::Response<R>>()
             .await
-            .context("failed to deserialize response")?
+            .with_context(|| format!("failed to deserialize `{}` response", method_name))?
             .into()
     }
 }

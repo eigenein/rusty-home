@@ -21,9 +21,9 @@ pub struct Opts {
 }
 
 impl Opts {
-    pub fn init(self) -> ClientInitGuard {
+    pub fn init(&self) -> ClientInitGuard {
         sentry::init((
-            self.dsn,
+            self.dsn.clone(),
             ClientOptions {
                 release: Some(Cow::Borrowed(git::COMMIT_SHA_SHORT)),
                 traces_sample_rate: self.traces_sample_rate,

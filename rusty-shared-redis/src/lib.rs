@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use anyhow::{bail, Context, Result};
 use fred::prelude::*;
+use fred::types::XID;
 use tracing::{debug, info, instrument};
 
 #[instrument(
@@ -39,12 +40,12 @@ pub async fn connect(addresses: Vec<SocketAddr>, service_name: String) -> Result
     let client = RedisClient::new(config);
 
     client.connect(Some(policy));
-    info!("awaiting connection…");
+    debug!("awaiting connection…");
     client
         .wait_for_connect()
         .await
         .context("failed to connect to Redis")?;
-    info!("connected to Redis");
+    debug!("connected to Redis");
 
     Ok(client)
 }
@@ -59,4 +60,22 @@ pub fn ignore_unknown_error(error: RedisError) -> Result<(), RedisError> {
     } else {
         Err(error)
     }
+}
+
+#[instrument(level = "debug", skip_all, fields(key = key, group_name = group_name))]
+pub async fn create_consumer_group(
+    redis: &RedisClient,
+    key: &str,
+    group_name: &str,
+) -> Result<(), RedisError> {
+    redis
+        .xgroup_create(key, group_name, XID::Max, false)
+        .await
+        .or_else(|error| {
+            if error.details().starts_with("BUSYGROUP") {
+                Ok(())
+            } else {
+                Err(error)
+            }
+        })
 }
