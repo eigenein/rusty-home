@@ -1577,11 +1577,10 @@ checksum = "f2cc38e8fa666e2de3c4aba7edeb5ffc5246c1c2ed0e3d17e560aeeba736b23f"
 
 [[package]]
 name = "rusty-shared-opts"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "anyhow",
  "clap",
- "fred",
  "reqwest",
  "sentry",
  "tracing",
@@ -1590,8 +1589,9 @@ dependencies = [
 
 [[package]]
 name = "rusty-shared-redis"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
+ "anyhow",
  "fred",
  "tracing",
 ]
