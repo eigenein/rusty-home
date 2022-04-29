@@ -5,7 +5,7 @@ use futures::{AsyncBufReadExt, Stream, TryStreamExt};
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client};
 use serde_json::json;
-use tracing::{info, instrument, warn};
+use tracing::{error, info, instrument, warn};
 
 use crate::models::{Message, Token};
 
@@ -93,7 +93,7 @@ impl Api {
                 match serde_json::from_str(&line).context("failed to deserialize") {
                     Ok(message) => Ok(Some(message)),
                     Err(error) => {
-                        warn!("{:#}: {}", error, line);
+                        error!("{:#}: {}", error, line);
                         Ok(None)
                     }
                 }
