@@ -1,5 +1,8 @@
+use std::borrow::Cow;
+
 use anyhow::{Context, Result};
 use fred::prelude::*;
+use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::models;
 use tracing::{debug, error, info, instrument};
@@ -7,6 +10,7 @@ use tracing::{debug, error, info, instrument};
 pub struct Bot {
     redis: RedisClient,
     bot_api: BotApi,
+    heartbeat: Heartbeat,
 
     /// Redis key that stores the next offset for `getUpdates`.
     offset_key: String,
@@ -14,12 +18,23 @@ pub struct Bot {
 
 impl Bot {
     const GET_UPDATES_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+    const MY_COMMANDS: &'static [models::BotCommand] = &[models::BotCommand {
+        command: Cow::Borrowed("start"),
+        description: Cow::Borrowed("Tells your chat ID"),
+    }];
 
     #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id, tracker_id = tracker_id))]
-    pub fn new(redis: RedisClient, bot_api: BotApi, bot_user_id: i64, tracker_id: &str) -> Self {
+    pub fn new(
+        redis: RedisClient,
+        bot_api: BotApi,
+        bot_user_id: i64,
+        tracker_id: &str,
+        heartbeat: Heartbeat,
+    ) -> Self {
         Self {
             redis,
             bot_api,
+            heartbeat,
             offset_key: format!(
                 "rusty:tractive:{}:telegram:{}:offset",
                 tracker_id, bot_user_id
@@ -28,11 +43,12 @@ impl Bot {
     }
 
     pub async fn run(self) -> Result<()> {
+        info!("setting up the bot…");
+        self.bot_api.set_my_commands(Self::MY_COMMANDS).await?;
+
         info!("running the bot…");
         loop {
-            if let Err(error) = self.handle_updates().await {
-                error!("main loop error: {:#}", error);
-            }
+            self.handle_updates().await?;
         }
     }
 
@@ -45,7 +61,14 @@ impl Bot {
 
         for update in updates {
             info!(update.id = update.id);
-            self.on_update(update.payload).await?;
+            if let Err(error) = self.on_update(update.payload).await {
+                error!(
+                    update.id = update.id,
+                    "failed to handle the update: {:#}", error
+                );
+            } else {
+                self.heartbeat.send().await;
+            }
             self.set_offset(update.id + 1).await?;
         }
 
@@ -71,13 +94,31 @@ impl Bot {
             .context("failed to set the offset")
     }
 
-    #[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all, err)]
     async fn on_update(&self, payload: models::UpdatePayload) -> Result<()> {
         match payload {
+            models::UpdatePayload::Message(message) => match message.text {
+                Some(text) if text.starts_with("/start") => {
+                    self.bot_api
+                        .send_message(
+                            message.chat.id.into(),
+                            format!("👋 Your chat ID is `{}`.", message.chat.id),
+                            Some(models::ParseMode::MarkdownV2),
+                            Some(message.id),
+                        )
+                        .await?;
+                }
+                _ => {
+                    debug!(
+                        message.text = message.text.as_deref(),
+                        "ignoring the unsupported message"
+                    );
+                }
+            },
             _ => {
                 debug!("ignoring the unsupported update");
-                Ok(())
             }
         }
+        Ok(())
     }
 }

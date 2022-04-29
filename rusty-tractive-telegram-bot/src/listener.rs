@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use fred::prelude::*;
 use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
@@ -44,7 +44,7 @@ impl Listener {
         info!("running the listener…");
         loop {
             if let Err(error) = self.handle_entries().await {
-                error!("main loop error: {:#}", error);
+                error!("stream listener error: {:#}", error);
             }
         }
     }
@@ -66,10 +66,16 @@ impl Listener {
         for (stream_id, entries) in response {
             if stream_id == self.position_stream_key {
                 for (entry_id, entry) in entries {
-                    self.on_position_entry(&entry_id, entry).await?;
-                    self.redis
-                        .xack(&stream_id, &self.group_name, entry_id)
-                        .await?;
+                    if let Err(error) = self.on_position_entry(&entry_id, entry).await {
+                        error!(
+                            entry_id = entry_id.as_str(),
+                            "failed to handle the stream entry: {:#}", error,
+                        );
+                    } else {
+                        self.redis
+                            .xack(&stream_id, &self.group_name, entry_id)
+                            .await?;
+                    }
                 }
             }
         }
@@ -82,7 +88,22 @@ impl Listener {
         entry_id: &str,
         entry: HashMap<String, String>,
     ) -> Result<()> {
-        info!("{}", entry_id); // TODO
+        let _latitude: f64 = entry
+            .get("lat")
+            .ok_or_else(|| anyhow!("missing latitude"))?
+            .parse()?;
+        let _longitude: f64 = entry
+            .get("lon")
+            .ok_or_else(|| anyhow!("missing longitude"))?
+            .parse()?;
+        let _accuracy: u32 = entry
+            .get("accuracy")
+            .ok_or_else(|| anyhow!("missing accuracy"))?
+            .parse()?;
+        let _course = match entry.get("course") {
+            Some(course) => Some(course.parse::<u16>()?),
+            None => None,
+        };
         Ok(())
     }
 }

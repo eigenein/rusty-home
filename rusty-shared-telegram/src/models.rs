@@ -1,5 +1,7 @@
+use std::borrow::Cow;
+
 use anyhow::{anyhow, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -39,6 +41,28 @@ pub struct User {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Chat {
+    /// Unique identifier for this chat.
+    pub id: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum ChatId {
+    /// Unique identifier for the target chat.
+    UniqueId(i64),
+
+    /// Username of the target channel (in the format `@channelusername`).
+    Username(Cow<'static, str>),
+}
+
+impl From<i64> for ChatId {
+    fn from(chat_id: i64) -> Self {
+        Self::UniqueId(chat_id)
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Update {
     #[serde(rename = "update_id")]
     pub id: i64,
@@ -61,9 +85,32 @@ pub struct Message {
     #[serde(rename = "message_id")]
     pub id: i64,
 
+    /// Conversation the message belongs to.
+    pub chat: Chat,
+
     #[serde(default)]
     pub from: Option<User>,
 
     #[serde(default)]
     pub text: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BotCommand {
+    /// Text of the command; 1-32 characters. Can contain only lowercase English letters, digits and underscores.
+    pub command: Cow<'static, str>,
+
+    /// Description of the command; 1-256 characters.
+    pub description: Cow<'static, str>,
+}
+
+/// https://core.telegram.org/bots/api#formatting-options
+#[derive(Debug, Serialize)]
+pub enum ParseMode {
+    /// https://core.telegram.org/bots/api#markdownv2-style
+    MarkdownV2,
+
+    /// https://core.telegram.org/bots/api#html-style
+    #[serde(rename = "HTML")]
+    Html,
 }

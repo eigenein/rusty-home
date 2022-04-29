@@ -1,7 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
 use futures::future::try_join;
-use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
 
 use crate::bot::Bot;
@@ -26,8 +25,14 @@ async fn main() -> Result<()> {
         let redis =
             rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name.clone())
                 .await?;
-        Bot::new(redis, bot_api.clone(), me.id, &tracker_id)
-    }; // TODO: heartbeat
+        Bot::new(
+            redis,
+            bot_api.clone(),
+            me.id,
+            &tracker_id,
+            opts.heartbeat.get_heartbeat()?,
+        )
+    };
     let listener = {
         let redis =
             rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name).await?;

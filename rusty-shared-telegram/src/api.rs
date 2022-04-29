@@ -79,6 +79,34 @@ impl BotApi {
         }
     }
 
+    /// https://core.telegram.org/bots/api#setmycommands
+    #[instrument(level = "info", skip_all)]
+    pub async fn set_my_commands(&self, commands: &[models::BotCommand]) -> Result<bool> {
+        self.call("setMyCommands", &json!({ "commands": commands }))
+            .await
+    }
+
+    /// https://core.telegram.org/bots/api#sendmessage
+    #[instrument(level = "info", skip_all)]
+    pub async fn send_message(
+        &self,
+        chat_id: models::ChatId,
+        text: String,
+        parse_mode: Option<models::ParseMode>,
+        reply_to_message_id: Option<i64>,
+    ) -> Result<models::Message> {
+        self.call(
+            "sendMessage",
+            &json!({
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": parse_mode,
+                "reply_to_message_id": reply_to_message_id,
+            }),
+        )
+        .await
+    }
+
     #[instrument(level = "debug", skip_all, fields(method_name = method_name))]
     async fn call<R: DeserializeOwned>(
         &self,
@@ -94,8 +122,6 @@ impl BotApi {
             .send()
             .await
             .with_context(|| format!("failed to send the `{}` request", method_name))?
-            .error_for_status()
-            .with_context(|| format!("`{}` request failed", method_name))?
             .json::<models::Response<R>>()
             .await
             .with_context(|| format!("failed to deserialize `{}` response", method_name))?
