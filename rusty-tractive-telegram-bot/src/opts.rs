@@ -1,5 +1,4 @@
 use clap::Parser;
-
 use rusty_shared_opts::{heartbeat, redis, sentry};
 
 #[derive(Parser)]

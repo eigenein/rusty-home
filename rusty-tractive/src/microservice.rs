@@ -3,10 +3,9 @@ use std::collections::HashMap;
 use anyhow::{Context, Result};
 use fred::prelude::*;
 use futures::TryStreamExt;
-use tracing::{debug, error, info, instrument};
-
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::ignore_unknown_error;
+use tracing::{debug, error, info, instrument};
 
 use crate::models::{
     HandshakeMessage, Hardware, KeepAliveMessage, Message, Position, Token, TrackerStatusMessage,
@@ -158,19 +157,22 @@ impl Microservice {
             course = position.course,
             "🎯",
         );
+        let mut fields = vec![
+            ("ts", position.timestamp.timestamp().to_string()),
+            ("lat", latitude.to_string()),
+            ("lon", longitude.to_string()),
+            ("accuracy", position.accuracy.to_string()),
+        ];
+        if let Some(course) = position.course {
+            fields.push(("course", course.to_string()));
+        }
         self.redis
             .xadd(
                 format!("rusty:tractive:{}:position", tracker_id),
                 false,
                 None,
                 format!("{}-0", position.timestamp.timestamp_millis()),
-                vec![
-                    ("ts", position.timestamp.timestamp().to_string()),
-                    ("lat", latitude.to_string()),
-                    ("lon", longitude.to_string()),
-                    ("accuracy", position.accuracy.to_string()),
-                    ("course", position.course.to_string()),
-                ],
+                fields,
             )
             .await
             .or_else(ignore_unknown_error)

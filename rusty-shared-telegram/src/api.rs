@@ -1,9 +1,10 @@
+use std::time::Instant;
+
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
-use std::time::Instant;
 use tracing::{debug, instrument};
 
 use crate::models;
@@ -14,6 +15,7 @@ const USER_AGENT: &str = concat!(
     " (Rust; https://github.com/eigenein/rusty-home)"
 );
 
+#[derive(Clone)]
 pub struct BotApi {
     client: Client,
     token: String,

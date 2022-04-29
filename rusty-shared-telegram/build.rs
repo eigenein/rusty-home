@@ -1,6 +1,5 @@
-use vergen::{vergen, Config, ShaKind};
-
 use anyhow::Result;
+use vergen::{vergen, Config, ShaKind};
 
 fn main() -> Result<()> {
     let mut config = Config::default();

@@ -78,7 +78,7 @@ pub struct Hardware {
 #[derive(Debug, Deserialize)]
 pub struct Position {
     pub accuracy: u32,
-    pub course: u16,
+    pub course: Option<u16>,
     pub latlong: (f64, f64),
 
     #[serde(
@@ -90,11 +90,11 @@ pub struct Position {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use anyhow::{bail, Result};
     use chrono::TimeZone;
     use serde_json::from_str;
+
+    use super::*;
 
     #[test]
     fn test_handshake_ok() -> Result<()> {
@@ -203,5 +203,14 @@ mod tests {
             }
             _ => bail!("incorrect message type: {:?}", message),
         }
+    }
+
+    #[test]
+    fn test_tracker_status_missing_course_ok() -> Result<()> {
+        let message: Message = from_str(
+            // language=json
+            r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","position":{"time":1651251487,"latlong":[1.0,-1.0],"sensor_used":"PHONE","accuracy":19,"altitude":44,"nearby_user_id":"6016cffc44a145ccd44a32aa","time_rcvd":1651251673},"hardware":{"time":1651251684,"battery_level":77,"temperature_state":"NORMAL","power_saving_zone_id":null,"clip_mounted_state":false},"charging_state":"NOT_CHARGING","battery_state":"REGULAR"}"#,
+        )?;
+        Ok(())
     }
 }

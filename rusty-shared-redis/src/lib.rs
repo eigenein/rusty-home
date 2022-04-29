@@ -10,7 +10,7 @@ use tracing::{debug, info, instrument};
     skip_all,
     fields(n_addresses = addresses.len(), service_name = service_name.as_str()),
 )]
-pub async fn connect(addresses: Vec<SocketAddr>, service_name: String) -> Result<RedisClient> {
+pub async fn connect(addresses: &[SocketAddr], service_name: String) -> Result<RedisClient> {
     let config = RedisConfig {
         server: match addresses.len() {
             0 => {
@@ -28,7 +28,7 @@ pub async fn connect(addresses: Vec<SocketAddr>, service_name: String) -> Result
                 ServerConfig::Sentinel {
                     service_name,
                     hosts: addresses
-                        .into_iter()
+                        .iter()
                         .map(|address| (address.ip().to_string(), address.port()))
                         .collect(),
                 }
@@ -36,10 +36,9 @@ pub async fn connect(addresses: Vec<SocketAddr>, service_name: String) -> Result
         },
         ..Default::default()
     };
-    let policy = ReconnectPolicy::default();
     let client = RedisClient::new(config);
 
-    client.connect(Some(policy));
+    client.connect(Some(Default::default()));
     debug!("awaiting connection…");
     client
         .wait_for_connect()
@@ -62,14 +61,14 @@ pub fn ignore_unknown_error(error: RedisError) -> Result<(), RedisError> {
     }
 }
 
-#[instrument(level = "debug", skip_all, fields(key = key, group_name = group_name))]
+#[instrument(level = "info", skip_all, fields(key = key, group_name = group_name))]
 pub async fn create_consumer_group(
     redis: &RedisClient,
     key: &str,
     group_name: &str,
 ) -> Result<(), RedisError> {
     redis
-        .xgroup_create(key, group_name, XID::Max, false)
+        .xgroup_create(key, group_name, XID::Max, true)
         .await
         .or_else(|error| {
             if error.details().starts_with("BUSYGROUP") {

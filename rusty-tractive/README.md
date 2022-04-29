@@ -13,13 +13,13 @@ Integrates [Tractive](https://tractive.com/).
 
 ### `rusty:tractive:<tracker_id>:position`
 
-| key        | type    | value            |
-|------------|---------|------------------|
-| `ts`       | integer | Unix time        |
-| `lat`      | float   | Latitude         |
-| `lon`      | float   | Longitude        |
-| `accuracy` | integer |                  |
-| `course`   | integer | Heading, degrees |
+| key        | type              | value            |
+|------------|-------------------|------------------|
+| `ts`       | integer           | Unix time        |
+| `lat`      | float             | Latitude         |
+| `lon`      | float             | Longitude        |
+| `accuracy` | integer           |                  |
+| `course`   | integer, optional | Heading, degrees |
 
 ## Heartbeat
 

@@ -16,7 +16,7 @@ async fn main() -> Result<()> {
     let _guard = opts.sentry.init();
     rusty_shared_tracing::init()?;
 
-    let redis = rusty_shared_redis::connect(opts.redis.addresses, opts.redis.service_name).await?;
+    let redis = rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name).await?;
 
     let microservice = Microservice {
         redis,

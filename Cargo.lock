@@ -752,6 +752,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gethostname"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1ebd34e35c46e00bb73e81363248d627782724609fe1b6396f553f68fe3862e"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1589,7 +1599,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-shared-redis"
-version = "0.3.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "fred",
@@ -1598,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-shared-telegram"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -1633,7 +1643,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "anyhow",
  "async-std",
@@ -1660,6 +1670,8 @@ dependencies = [
  "async-std",
  "clap",
  "fred",
+ "futures",
+ "gethostname",
  "rusty-shared-opts",
  "rusty-shared-redis",
  "rusty-shared-telegram",
