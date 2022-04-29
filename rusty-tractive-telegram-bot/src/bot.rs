@@ -5,7 +5,7 @@ use fred::prelude::*;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::{methods, models};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 pub struct Bot {
     redis: RedisClient,
@@ -114,14 +114,14 @@ impl Bot {
                         .await?;
                 }
                 _ => {
-                    debug!(
+                    warn!(
                         message.text = message.text.as_deref(),
                         "ignoring the unsupported message"
                     );
                 }
             },
             _ => {
-                debug!("ignoring the unsupported update");
+                warn!("ignoring the unsupported update");
             }
         }
         Ok(())
