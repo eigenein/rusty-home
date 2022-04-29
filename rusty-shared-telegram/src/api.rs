@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use reqwest::{Client, StatusCode};
+use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
@@ -40,7 +40,7 @@ impl BotApi {
         self.call("getMe", &()).await
     }
 
-    #[instrument(level = "debug", skip_all)]
+    #[instrument(level = "debug", skip_all, err)]
     pub async fn get_updates(
         &self,
         offset: i64,
@@ -60,23 +60,21 @@ impl BotApi {
             .timeout(self.timeout + timeout)
             .send()
             .await
-            .context("failed to send the `getUpdates` request")?;
-        if response.status() == StatusCode::CONFLICT {
-            let time_left = timeout - start_time.elapsed();
-            debug!(
-                sleep_time_secs = time_left.as_secs(),
-                "`getUpdates` polling conflict, will sleep for a while"
-            );
-            async_std::task::sleep(time_left).await;
-            return Ok(Vec::new());
-        }
-        response
-            .error_for_status()
-            .context("`getUpdates` request failed")?
+            .context("failed to send the request")?
             .json::<models::Response<Vec<models::Update>>>()
             .await
-            .context("failed to deserialize `getUpdates` response")?
-            .into()
+            .context("failed to deserialize response")?;
+        match response {
+            models::Response::Err {
+                error_code: 409, ..
+            } => {
+                let time_left = timeout - start_time.elapsed();
+                debug!(secs = time_left.as_secs(), "conflict, sleeping…");
+                async_std::task::sleep(time_left).await;
+                Ok(Vec::new())
+            }
+            _ => response.into(),
+        }
     }
 
     #[instrument(level = "debug", skip_all, fields(method_name = method_name))]
