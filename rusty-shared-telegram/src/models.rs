@@ -46,7 +46,7 @@ pub struct Chat {
     pub id: i64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum ChatId {
     /// Unique identifier for the target chat.
@@ -65,7 +65,7 @@ impl From<i64> for ChatId {
 #[derive(Debug, Deserialize)]
 pub struct Update {
     #[serde(rename = "update_id")]
-    pub id: i64,
+    pub id: u64,
 
     #[serde(flatten)]
     pub payload: UpdatePayload,
@@ -105,7 +105,7 @@ pub struct BotCommand {
 }
 
 /// https://core.telegram.org/bots/api#formatting-options
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, Copy)]
 pub enum ParseMode {
     /// https://core.telegram.org/bots/api#markdownv2-style
     MarkdownV2,

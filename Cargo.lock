@@ -1608,13 +1608,14 @@ dependencies = [
 
 [[package]]
 name = "rusty-shared-telegram"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-std",
  "reqwest",
  "serde",
  "serde_json",
+ "serde_with",
  "tracing",
  "vergen",
 ]
@@ -1643,7 +1644,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "anyhow",
  "async-std",

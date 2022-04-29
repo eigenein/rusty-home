@@ -4,10 +4,9 @@ use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json::json;
 use tracing::{debug, instrument};
 
-use crate::models;
+use crate::{methods, models};
 
 const USER_AGENT: &str = concat!(
     "rusty-shared-telegram/",
@@ -43,11 +42,7 @@ impl BotApi {
     }
 
     #[instrument(level = "debug", skip_all, err)]
-    pub async fn get_updates(
-        &self,
-        offset: i64,
-        timeout: std::time::Duration,
-    ) -> Result<Vec<models::Update>> {
+    pub async fn get_updates(&self, payload: methods::GetUpdates) -> Result<Vec<models::Update>> {
         let start_time = Instant::now();
         let response = self
             .client
@@ -55,11 +50,8 @@ impl BotApi {
                 "https://api.telegram.org/bot{}/getUpdates",
                 self.token,
             ))
-            .json(&json!({
-                "offset": offset,
-                "timeout": timeout.as_secs(),
-            }))
-            .timeout(self.timeout + timeout)
+            .json(&payload)
+            .timeout(self.timeout + payload.timeout)
             .send()
             .await
             .context("failed to send the request")?
@@ -70,7 +62,7 @@ impl BotApi {
             models::Response::Err {
                 error_code: 409, ..
             } => {
-                let time_left = timeout - start_time.elapsed();
+                let time_left = payload.timeout - start_time.elapsed();
                 debug!(secs = time_left.as_secs(), "conflict, sleeping…");
                 async_std::task::sleep(time_left).await;
                 Ok(Vec::new())
@@ -81,30 +73,14 @@ impl BotApi {
 
     /// https://core.telegram.org/bots/api#setmycommands
     #[instrument(level = "info", skip_all)]
-    pub async fn set_my_commands(&self, commands: &[models::BotCommand]) -> Result<bool> {
-        self.call("setMyCommands", &json!({ "commands": commands }))
-            .await
+    pub async fn set_my_commands(&self, payload: methods::SetMyCommands) -> Result<bool> {
+        self.call("setMyCommands", &payload).await
     }
 
     /// https://core.telegram.org/bots/api#sendmessage
     #[instrument(level = "info", skip_all)]
-    pub async fn send_message(
-        &self,
-        chat_id: models::ChatId,
-        text: String,
-        parse_mode: Option<models::ParseMode>,
-        reply_to_message_id: Option<i64>,
-    ) -> Result<models::Message> {
-        self.call(
-            "sendMessage",
-            &json!({
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": parse_mode,
-                "reply_to_message_id": reply_to_message_id,
-            }),
-        )
-        .await
+    pub async fn send_message(&self, payload: methods::SendMessage) -> Result<models::Message> {
+        self.call("sendMessage", &payload).await
     }
 
     #[instrument(level = "debug", skip_all, fields(method_name = method_name))]

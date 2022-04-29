@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use fred::prelude::*;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
-use rusty_shared_telegram::models;
+use rusty_shared_telegram::{methods, models};
 use tracing::{debug, error, info, instrument};
 
 pub struct Bot {
@@ -18,10 +18,6 @@ pub struct Bot {
 
 impl Bot {
     const GET_UPDATES_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
-    const MY_COMMANDS: &'static [models::BotCommand] = &[models::BotCommand {
-        command: Cow::Borrowed("start"),
-        description: Cow::Borrowed("Tells your chat ID"),
-    }];
 
     #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id, tracker_id = tracker_id))]
     pub fn new(
@@ -44,7 +40,14 @@ impl Bot {
 
     pub async fn run(self) -> Result<()> {
         info!("setting up the bot…");
-        self.bot_api.set_my_commands(Self::MY_COMMANDS).await?;
+        self.bot_api
+            .set_my_commands(
+                methods::SetMyCommands::default().command(models::BotCommand {
+                    command: Cow::Borrowed("start"),
+                    description: Cow::Borrowed("Tells your chat ID"),
+                }),
+            )
+            .await?;
 
         info!("running the bot…");
         loop {
@@ -56,7 +59,7 @@ impl Bot {
         let offset = self.get_offset().await?;
         let updates = self
             .bot_api
-            .get_updates(offset, Self::GET_UPDATES_TIMEOUT)
+            .get_updates(methods::GetUpdates::new(Self::GET_UPDATES_TIMEOUT).offset(offset))
             .await?;
 
         for update in updates {
@@ -76,10 +79,10 @@ impl Bot {
     }
 
     #[instrument(level = "debug", skip_all, fields(self.offset_key = self.offset_key.as_str()))]
-    async fn get_offset(&self) -> Result<i64> {
+    async fn get_offset(&self) -> Result<u64> {
         let offset = self
             .redis
-            .get::<Option<i64>, _>(&self.offset_key)
+            .get::<Option<u64>, _>(&self.offset_key)
             .await
             .context("failed to retrieve the offset")?
             .unwrap_or_default();
@@ -87,7 +90,7 @@ impl Bot {
     }
 
     #[instrument(level = "info", skip_all, fields(offset = offset))]
-    async fn set_offset(&self, offset: i64) -> Result<()> {
+    async fn set_offset(&self, offset: u64) -> Result<()> {
         self.redis
             .set(&self.offset_key, offset, None, None, false)
             .await
@@ -101,10 +104,12 @@ impl Bot {
                 Some(text) if text.starts_with("/start") => {
                     self.bot_api
                         .send_message(
-                            message.chat.id.into(),
-                            format!("👋 Your chat ID is `{}`.", message.chat.id),
-                            Some(models::ParseMode::MarkdownV2),
-                            Some(message.id),
+                            methods::SendMessage::new(
+                                message.chat.id.into(),
+                                format!(r#"👋 Your chat ID is `{}`\."#, message.chat.id),
+                            )
+                            .parse_mode(models::ParseMode::MarkdownV2)
+                            .reply_to_message_id(message.id),
                         )
                         .await?;
                 }
