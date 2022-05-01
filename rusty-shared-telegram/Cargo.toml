@@ -1,13 +1,12 @@
 [package]
 name = "rusty-shared-telegram"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
 description = "Integrates Telegram Bot API"
 build = "build.rs"
 
 [dependencies]
 anyhow = "1.0.57"
-async-std = { version = "1.11.0" }
 reqwest = { version = "0.11.10", default-features = false, features = ["rustls-tls", "json"] }
 serde = "1.0.136"
 serde_json = "1.0.79"

@@ -1,10 +1,8 @@
-use std::time::Instant;
-
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 use crate::{methods, models};
 
@@ -43,9 +41,7 @@ impl BotApi {
 
     #[instrument(level = "debug", skip_all, err)]
     pub async fn get_updates(&self, payload: methods::GetUpdates) -> Result<Vec<models::Update>> {
-        let start_time = Instant::now();
-        let response = self
-            .client
+        self.client
             .post(format!(
                 "https://api.telegram.org/bot{}/getUpdates",
                 self.token,
@@ -57,18 +53,8 @@ impl BotApi {
             .context("failed to send the request")?
             .json::<models::Response<Vec<models::Update>>>()
             .await
-            .context("failed to deserialize response")?;
-        match response {
-            models::Response::Err {
-                error_code: 409, ..
-            } => {
-                let time_left = payload.timeout - start_time.elapsed();
-                debug!(secs = time_left.as_secs(), "conflict, sleeping…");
-                async_std::task::sleep(time_left).await;
-                Ok(Vec::new())
-            }
-            _ => response.into(),
-        }
+            .context("failed to deserialize response")?
+            .into()
     }
 
     /// https://core.telegram.org/bots/api#setmycommands

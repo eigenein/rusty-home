@@ -57,7 +57,7 @@ impl Listener {
                 &self.consumer_name,
                 None,
                 Some(0),
-                false,
+                true,
                 &self.position_stream_key,
                 XID::NewInGroup,
             )

@@ -1,7 +1,10 @@
 use std::borrow::Cow;
+use std::time;
 
 use anyhow::{Context, Result};
+use async_std::task;
 use fred::prelude::*;
+use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::{methods, models};
@@ -11,30 +14,33 @@ pub struct Bot {
     redis: RedisClient,
     bot_api: BotApi,
     heartbeat: Heartbeat,
+    hostname: String,
 
     /// Redis key that stores the next offset for `getUpdates`.
     offset_key: String,
+
+    get_updates_key: String,
 }
 
 impl Bot {
-    const GET_UPDATES_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+    const GET_UPDATES_TIMEOUT: std::time::Duration =
+        std::time::Duration::from_secs(Self::GET_UPDATES_TIMEOUT_SECS);
+    const GET_UPDATES_TIMEOUT_SECS: u64 = 60;
 
-    #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id, tracker_id = tracker_id))]
+    #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id))]
     pub fn new(
         redis: RedisClient,
         bot_api: BotApi,
         bot_user_id: i64,
-        tracker_id: &str,
         heartbeat: Heartbeat,
     ) -> Self {
         Self {
             redis,
             bot_api,
             heartbeat,
-            offset_key: format!(
-                "rusty:tractive:{}:telegram:{}:offset",
-                tracker_id, bot_user_id
-            ),
+            hostname: gethostname().into_string().unwrap(),
+            offset_key: format!("rusty:telegram:{}:offset", bot_user_id),
+            get_updates_key: format!("rusty:telegram:{}:get_updates", bot_user_id),
         }
     }
 
@@ -51,7 +57,43 @@ impl Bot {
 
         info!("running the bot…");
         loop {
-            self.handle_updates().await?;
+            if self.claim_get_updates().await? {
+                self.handle_updates().await?;
+            } else {
+                // Some other instance claimed the slot and is handling updates.
+                // We'll sleep the next time slot would be available.
+                let ttl_millis: u64 = self.redis.pttl(&self.get_updates_key).await?;
+                debug!(ttl_millis = ttl_millis, "didn't manage to claim a slot");
+                task::sleep(time::Duration::from_millis(ttl_millis + 1)).await;
+            }
+        }
+    }
+
+    /// The Bot API only allows one `getUpdates` long polling call at a time,
+    /// but I want to run it on multiple hosts simultaneously to be more fault-tolerant.
+    ///
+    /// Thus, each instance will have to «claim» its `getUpdates` call before the actual
+    /// call would be made.
+    #[instrument(level = "info", skip_all)]
+    async fn claim_get_updates(&self) -> Result<bool> {
+        let response = self
+            .redis
+            .set::<Option<()>, _, _>(
+                &self.get_updates_key,
+                &self.hostname,
+                Some(Expiration::EX(Self::GET_UPDATES_TIMEOUT_SECS as i64)),
+                Some(SetOptions::NX),
+                false,
+            )
+            .await;
+
+        match response {
+            Ok(Some(_)) => {
+                debug!("claimed `getUpdates` slot");
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(error) => Err(error).context("failed to claim a slot"),
         }
     }
 
@@ -64,17 +106,20 @@ impl Bot {
 
         for update in updates {
             info!(update.id = update.id);
+
+            // I update the offset before calling `on_update` to avoid getting stuck
+            // in case of a permanent error.
+            self.set_offset(update.id + 1).await?;
+
             if let Err(error) = self.on_update(update.payload).await {
                 error!(
                     update.id = update.id,
                     "failed to handle the update: {:#}", error
                 );
-            } else {
-                self.heartbeat.send().await;
             }
-            self.set_offset(update.id + 1).await?;
         }
 
+        self.heartbeat.send().await;
         Ok(())
     }
 

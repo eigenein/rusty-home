@@ -29,7 +29,6 @@ async fn main() -> Result<()> {
             redis,
             bot_api.clone(),
             me.id,
-            &tracker_id,
             opts.heartbeat.get_heartbeat()?,
         )
     };
