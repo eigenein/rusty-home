@@ -64,9 +64,58 @@ impl BotApi {
     }
 
     /// https://core.telegram.org/bots/api#sendmessage
-    #[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all, fields(chat_id = ?payload.chat_id))]
     pub async fn send_message(&self, payload: methods::SendMessage) -> Result<models::Message> {
         self.call("sendMessage", &payload).await
+    }
+
+    #[instrument(level = "info", skip_all, fields(chat_id = ?chat_id, message_id = message_id))]
+    pub async fn delete_message(&self, chat_id: models::ChatId, message_id: i64) -> Result<bool> {
+        self.call(
+            "deleteMessage",
+            &methods::DeleteMessage {
+                chat_id,
+                message_id,
+            },
+        )
+        .await
+    }
+
+    /// https://core.telegram.org/bots/api#sendlocation
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(
+            chat_id = ?payload.location.chat_id,
+            horizontal_accuracy = payload.location.horizontal_accuracy,
+        ),
+    )]
+    pub async fn send_location(&self, payload: methods::SendLocation) -> Result<models::Message> {
+        self.call("sendLocation", &payload).await
+    }
+
+    #[instrument(level = "info", skip_all, fields(chat_id = ?payload.chat_id, message_id = payload.message_id))]
+    pub async fn edit_message_live_location(
+        &self,
+        payload: methods::EditMessageLiveLocation,
+    ) -> Result<models::Message> {
+        self.call("editMessageLiveLocation", &payload).await
+    }
+
+    #[instrument(level = "info", skip_all, fields(chat_id = ?chat_id, message_id = message_id))]
+    pub async fn stop_message_live_location(
+        &self,
+        chat_id: models::ChatId,
+        message_id: i64,
+    ) -> Result<models::Message> {
+        self.call(
+            "stopMessageLiveLocation",
+            &methods::StopMessageLiveLocation {
+                chat_id,
+                message_id,
+            },
+        )
+        .await
     }
 
     #[instrument(level = "debug", skip_all, fields(method_name = method_name))]

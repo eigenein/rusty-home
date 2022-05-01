@@ -7,20 +7,33 @@ use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::ignore_unknown_error;
 use tracing::{debug, error, info, instrument};
 
-use crate::models::{
-    HandshakeMessage, Hardware, KeepAliveMessage, Message, Position, Token, TrackerStatusMessage,
-};
-use crate::Api;
+use crate::{models, Api};
 
 pub struct Microservice {
-    pub api: Api,
-    pub redis: RedisClient,
-    pub heartbeat: Heartbeat,
-    pub email: String,
-    pub password: String,
+    api: Api,
+    redis: RedisClient,
+    heartbeat: Heartbeat,
+    email: String,
+    password: String,
 }
 
 impl Microservice {
+    pub fn new(
+        api: Api,
+        redis: RedisClient,
+        heartbeat: Heartbeat,
+        email: String,
+        password: String,
+    ) -> Self {
+        Self {
+            api,
+            redis,
+            heartbeat,
+            email,
+            password,
+        }
+    }
+
     pub async fn run(self) -> ! {
         loop {
             if let Err(error) = self.loop_().await {
@@ -66,7 +79,7 @@ impl Microservice {
     }
 
     #[instrument(level = "info", skip_all, fields(user_id = token.user_id.as_str()))]
-    async fn store_access_token(&self, key: &str, token: &Token) -> Result<()> {
+    async fn store_access_token(&self, key: &str, token: &models::Token) -> Result<()> {
         let values = vec![
             ("user_id", &token.user_id),
             ("access_token", &token.access_token),
@@ -81,11 +94,11 @@ impl Microservice {
     }
 
     #[instrument(level = "debug", skip_all)]
-    async fn on_message(&self, message: Message) -> Result<()> {
+    async fn on_message(&self, message: models::Message) -> Result<()> {
         let result = match message {
-            Message::Handshake(payload) => self.on_handshake(payload).await,
-            Message::KeepAlive(payload) => self.on_keep_alive(payload).await,
-            Message::TrackerStatus(payload) => self.on_tracker_status(payload).await,
+            models::Message::Handshake(payload) => self.on_handshake(payload).await,
+            models::Message::KeepAlive(payload) => self.on_keep_alive(payload).await,
+            models::Message::TrackerStatus(payload) => self.on_tracker_status(payload).await,
             _ => Ok(()),
         };
         if let Err(error) = result {
@@ -97,13 +110,13 @@ impl Microservice {
     }
 
     #[instrument(level = "info", skip_all)]
-    async fn on_handshake(&self, payload: HandshakeMessage) -> Result<()> {
+    async fn on_handshake(&self, payload: models::HandshakeMessage) -> Result<()> {
         info!(keep_alive_ttl = %payload.keep_alive_ttl, "🐈 meow!");
         Ok(())
     }
 
     #[instrument(level = "debug", skip_all)]
-    async fn on_keep_alive(&self, payload: KeepAliveMessage) -> Result<()> {
+    async fn on_keep_alive(&self, payload: models::KeepAliveMessage) -> Result<()> {
         debug!(
             timestamp = payload.timestamp.to_string().as_str(),
             "🐈 purr…",
@@ -112,7 +125,7 @@ impl Microservice {
     }
 
     #[instrument(level = "info", skip_all, fields(tracker_id = payload.tracker_id.as_str()))]
-    async fn on_tracker_status(&self, payload: TrackerStatusMessage) -> Result<()> {
+    async fn on_tracker_status(&self, payload: models::TrackerStatusMessage) -> Result<()> {
         let tracker_id = payload.tracker_id.to_lowercase();
         if let Some(hardware) = payload.hardware {
             self.on_hardware_update(&tracker_id, hardware).await?;
@@ -124,7 +137,7 @@ impl Microservice {
     }
 
     #[instrument(level = "info", skip_all)]
-    async fn on_hardware_update(&self, tracker_id: &str, hardware: Hardware) -> Result<()> {
+    async fn on_hardware_update(&self, tracker_id: &str, hardware: models::Hardware) -> Result<()> {
         info!(
             timestamp = hardware.timestamp.to_string().as_str(),
             battery_level = hardware.battery_level,
@@ -147,7 +160,7 @@ impl Microservice {
     }
 
     #[instrument(level = "info", skip_all)]
-    async fn on_position_update(&self, tracker_id: &str, position: Position) -> Result<()> {
+    async fn on_position_update(&self, tracker_id: &str, position: models::Position) -> Result<()> {
         let (latitude, longitude) = position.latlong;
         info!(
             timestamp = position.timestamp.to_string().as_str(),

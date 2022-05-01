@@ -23,8 +23,8 @@ pub struct Bot {
 }
 
 impl Bot {
-    const GET_UPDATES_TIMEOUT: std::time::Duration =
-        std::time::Duration::from_secs(Self::GET_UPDATES_TIMEOUT_SECS);
+    const GET_UPDATES_TIMEOUT: time::Duration =
+        time::Duration::from_secs(Self::GET_UPDATES_TIMEOUT_SECS);
     const GET_UPDATES_TIMEOUT_SECS: u64 = 60;
 
     #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id))]
@@ -119,10 +119,14 @@ impl Bot {
             }
         }
 
+        // Unclaim the time slot should we finish sooner.
+        self.redis.del(&self.get_updates_key).await?;
+
         self.heartbeat.send().await;
         Ok(())
     }
 
+    /// Retrieves the bot API offset from which we should read the updates.
     #[instrument(level = "debug", skip_all, fields(self.offset_key = self.offset_key.as_str()))]
     async fn get_offset(&self) -> Result<u64> {
         let offset = self

@@ -60,6 +60,15 @@ pub struct TrackerStatusMessage {
     pub hardware: Option<Hardware>,
 
     pub position: Option<Position>,
+
+    pub live_tracking: Option<LiveTracking>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+pub struct LiveTracking {
+    #[serde(rename = "active")]
+    pub is_active: bool,
 }
 
 #[allow(dead_code)]
@@ -207,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_tracker_status_missing_course_ok() -> Result<()> {
-        let message: Message = from_str(
+        from_str::<Message>(
             // language=json
             r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","position":{"time":1651251487,"latlong":[1.0,-1.0],"sensor_used":"PHONE","accuracy":19,"altitude":44,"nearby_user_id":"6016cffc44a145ccd44a32aa","time_rcvd":1651251673},"hardware":{"time":1651251684,"battery_level":77,"temperature_state":"NORMAL","power_saving_zone_id":null,"clip_mounted_state":false},"charging_state":"NOT_CHARGING","battery_state":"REGULAR"}"#,
         )?;

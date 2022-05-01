@@ -1,29 +1,40 @@
 use std::collections::HashMap;
+use std::time;
 
 use anyhow::{anyhow, Result};
 use fred::prelude::*;
 use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_telegram::api::BotApi;
+use rusty_shared_telegram::{methods, models};
 use tracing::{error, info, instrument};
 
 pub struct Listener {
     redis: RedisClient,
     bot_api: BotApi,
-    position_stream_key: String,
+
+    /// Target chat to which the updates will be posted.
+    chat_id: models::ChatId,
 
     consumer_name: String,
 
     /// Redis stream consumer group name.
     group_name: String,
+
+    position_stream_key: String,
+
+    live_location_message_id_key: String,
 }
 
 impl Listener {
+    const LIVE_PERIOD: time::Duration = time::Duration::from_secs(86400);
+
     pub async fn new(
         redis: RedisClient,
         bot_api: BotApi,
         bot_user_id: i64,
         tracker_id: &str,
+        chat_id: i64,
     ) -> Result<Self> {
         let position_stream_key = format!("rusty:tractive:{}:position", tracker_id);
         let group_name = format!("rusty:telegram:{}", bot_user_id);
@@ -35,7 +46,12 @@ impl Listener {
             bot_api,
             position_stream_key,
             group_name,
+            chat_id: models::ChatId::UniqueId(chat_id),
             consumer_name: gethostname().into_string().unwrap(),
+            live_location_message_id_key: format!(
+                "rusty:telegram:{}:live_location_message_id",
+                bot_user_id,
+            ),
         };
         Ok(this)
     }
@@ -88,22 +104,73 @@ impl Listener {
         entry_id: &str,
         entry: HashMap<String, String>,
     ) -> Result<()> {
-        let _latitude: f64 = entry
-            .get("lat")
-            .ok_or_else(|| anyhow!("missing latitude"))?
-            .parse()?;
-        let _longitude: f64 = entry
-            .get("lon")
-            .ok_or_else(|| anyhow!("missing longitude"))?
-            .parse()?;
-        let _accuracy: u32 = entry
-            .get("accuracy")
-            .ok_or_else(|| anyhow!("missing accuracy"))?
-            .parse()?;
+        let location = methods::Location::new(
+            self.chat_id.clone(),
+            entry
+                .get("lat")
+                .ok_or_else(|| anyhow!("missing latitude"))?
+                .parse()?,
+            entry
+                .get("lon")
+                .ok_or_else(|| anyhow!("missing longitude"))?
+                .parse()?,
+        )
+        .horizontal_accuracy(
+            entry
+                .get("accuracy")
+                .ok_or_else(|| anyhow!("missing accuracy"))?
+                .parse()?,
+        );
         let _course = match entry.get("course") {
             Some(course) => Some(course.parse::<u16>()?),
             None => None,
         };
+
+        match self
+            .redis
+            .get::<Option<i64>, _>(&self.live_location_message_id_key)
+            .await?
+        {
+            Some(message_id) => {
+                // The message is already present in the chat. We need to update it.
+                self.bot_api
+                    .edit_message_live_location(methods::EditMessageLiveLocation::new(
+                        self.chat_id.clone(),
+                        message_id,
+                        location,
+                    ))
+                    .await?;
+            }
+            None => {
+                // A location message is missing. We need to send a new one.
+                let message_id = self
+                    .bot_api
+                    .send_location(
+                        methods::SendLocation::new(location).live_period(Self::LIVE_PERIOD),
+                    )
+                    .await?
+                    .id;
+                // Now we attempt to set the message ID in Redis.
+                if self
+                    .redis
+                    .set::<Option<()>, _, _>(
+                        &self.live_location_message_id_key,
+                        message_id,
+                        Some(Expiration::EX(Self::LIVE_PERIOD.as_secs() as i64)),
+                        Some(SetOptions::NX),
+                        false,
+                    )
+                    .await?
+                    .is_none()
+                {
+                    // Some other instance did it quicker. We need to delete our message.
+                    self.bot_api
+                        .delete_message(self.chat_id.clone(), message_id)
+                        .await?;
+                };
+            }
+        };
+
         Ok(())
     }
 }
