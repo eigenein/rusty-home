@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::time;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use fred::prelude::*;
 use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
@@ -106,25 +107,19 @@ impl Listener {
     ) -> Result<()> {
         let location = methods::Location::new(
             self.chat_id.clone(),
-            entry
-                .get("lat")
-                .ok_or_else(|| anyhow!("missing latitude"))?
-                .parse()?,
-            entry
-                .get("lon")
-                .ok_or_else(|| anyhow!("missing longitude"))?
-                .parse()?,
-        )
-        .horizontal_accuracy(
-            entry
-                .get("accuracy")
-                .ok_or_else(|| anyhow!("missing accuracy"))?
-                .parse()?,
+            get_parsed(&entry, "lat")?,
+            get_parsed(&entry, "lon")?,
         );
+        let location = location.horizontal_accuracy(get_parsed(&entry, "accuracy")?);
         let _course = match entry.get("course") {
             Some(course) => Some(course.parse::<u16>()?),
             None => None,
-        };
+        }; // TODO: make use of it.
+        info!(
+            latitude = location.latitude,
+            longitude = location.longitude,
+            horizontal_accuracy = location.horizontal_accuracy,
+        );
 
         match self
             .redis
@@ -173,4 +168,17 @@ impl Listener {
 
         Ok(())
     }
+}
+
+// TODO: move to a shared package.
+fn get_parsed<T>(fields: &HashMap<String, String>, key: &str) -> Result<T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: 'static + std::error::Error + Send + Sync,
+{
+    fields
+        .get(key)
+        .ok_or_else(|| anyhow!("missing `{}`", key))?
+        .parse()
+        .with_context(|| format!("failed to parse `{}`", key))
 }
