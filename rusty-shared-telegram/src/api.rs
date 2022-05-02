@@ -42,7 +42,7 @@ impl BotApi {
     #[instrument(level = "debug", skip_all, fields(offset = payload.offset))]
     pub async fn get_updates(&self, payload: methods::GetUpdates) -> Result<Vec<models::Update>> {
         debug!(timeout = ?payload.timeout, "starting the long polling request…");
-        let body = self
+        let text = self
             .client
             .post(format!(
                 "https://api.telegram.org/bot{}/getUpdates",
@@ -53,11 +53,11 @@ impl BotApi {
             .send()
             .await
             .context("failed to send the request")?
-            .bytes()
+            .text_with_charset("utf-8")
             .await?;
 
-        debug!(body = ?body, "completed the long polling request");
-        serde_json::from_slice::<models::Response<Vec<models::Update>>>(&body)
+        debug!(text = ?text, "completed the long polling request");
+        serde_json::from_str::<models::Response<Vec<models::Update>>>(&text)
             .context("failed to deserialize response")?
             .into()
     }
@@ -129,7 +129,7 @@ impl BotApi {
         method_name: &str,
         body: &impl Serialize,
     ) -> Result<R> {
-        let body = self
+        let text = self
             .client
             .post(format!(
                 "https://api.telegram.org/bot{}/{}",
@@ -139,10 +139,10 @@ impl BotApi {
             .send()
             .await
             .with_context(|| format!("failed to send the `{}` request", method_name))?
-            .bytes()
+            .text_with_charset("utf-8")
             .await?;
-        debug!(body = ?body, "completed the request");
-        serde_json::from_slice::<models::Response<R>>(&body)
+        debug!(text = ?text, "completed the request");
+        serde_json::from_str::<models::Response<R>>(&text)
             .with_context(|| format!("failed to deserialize `{}` response", method_name))?
             .into()
     }
