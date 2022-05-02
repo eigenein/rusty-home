@@ -1621,7 +1621,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-shared-tracing"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "sentry",
@@ -1643,7 +1643,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "anyhow",
  "async-std",
@@ -1664,7 +1664,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive-telegram-bot"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "async-std",
