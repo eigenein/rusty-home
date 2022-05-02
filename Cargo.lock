@@ -1643,7 +1643,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive"
-version = "1.1.2"
+version = "1.1.3"
 dependencies = [
  "anyhow",
  "async-std",
@@ -1655,7 +1655,6 @@ dependencies = [
  "rusty-shared-opts",
  "rusty-shared-redis",
  "rusty-shared-tracing",
- "sentry",
  "serde",
  "serde_json",
  "serde_with",
@@ -1665,7 +1664,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-tractive-telegram-bot"
-version = "1.1.4"
+version = "1.1.5"
 dependencies = [
  "anyhow",
  "async-std",
@@ -1677,7 +1676,6 @@ dependencies = [
  "rusty-shared-redis",
  "rusty-shared-telegram",
  "rusty-shared-tracing",
- "sentry",
  "tracing",
 ]
 

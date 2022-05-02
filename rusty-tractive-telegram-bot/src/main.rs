@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use futures::future::try_join;
 use rusty_shared_telegram::api::BotApi;
-use sentry::integrations::anyhow::capture_anyhow;
+use tracing::error;
 
 use crate::bot::Bot;
 use crate::listener::Listener;
@@ -19,7 +19,7 @@ async fn main() {
     rusty_shared_tracing::init().unwrap();
 
     if let Err(error) = run(opts).await {
-        capture_anyhow(&error);
+        error!("fatal error: {:#}", error);
     }
 }
 
