@@ -34,6 +34,7 @@ pub async fn connect(addresses: &[SocketAddr], service_name: String) -> Result<R
                 }
             }
         },
+        blocking: Blocking::Error,
         ..Default::default()
     };
     let client = RedisClient::new(config);
