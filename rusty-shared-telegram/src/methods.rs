@@ -78,6 +78,9 @@ pub struct Location {
     pub longitude: f64,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub heading: Option<u16>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub horizontal_accuracy: Option<f32>,
 }
 
@@ -87,12 +90,18 @@ impl Location {
             chat_id,
             latitude,
             longitude,
+            heading: None,
             horizontal_accuracy: None,
         }
     }
 
     pub fn horizontal_accuracy(mut self, horizontal_accuracy: f32) -> Self {
         self.horizontal_accuracy = Some(horizontal_accuracy);
+        self
+    }
+
+    pub fn heading(mut self, heading: u16) -> Self {
+        self.heading = Some(heading);
         self
     }
 }

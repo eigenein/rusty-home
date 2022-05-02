@@ -111,14 +111,15 @@ impl Listener {
             get_parsed(&entry, "lon")?,
         );
         let location = location.horizontal_accuracy(get_parsed(&entry, "accuracy")?);
-        let _course = match entry.get("course") {
-            Some(course) => Some(course.parse::<u16>()?),
-            None => None,
-        }; // TODO: make use of it.
+        let location = match entry.get("course") {
+            Some(course) => location.heading(course.parse::<u16>()?),
+            None => location,
+        };
         info!(
             latitude = location.latitude,
             longitude = location.longitude,
             horizontal_accuracy = location.horizontal_accuracy,
+            heading = location.heading,
         );
 
         match self
