@@ -167,14 +167,14 @@ impl Bot {
                         .await?;
                 }
                 _ => {
-                    warn!(
-                        message.text = message.text.as_deref(),
+                    debug!(
+                        message.text = ?message.text,
                         "ignoring the unsupported message"
                     );
                 }
             },
             _ => {
-                warn!("ignoring the unsupported update");
+                debug!(payload = ?payload, "ignoring the unsupported update");
             }
         }
         Ok(())
