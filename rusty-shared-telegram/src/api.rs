@@ -56,7 +56,7 @@ impl BotApi {
             .bytes()
             .await?;
 
-        debug!(body = ?body, "completed the request");
+        debug!(body = ?body, "completed the long polling request");
         serde_json::from_slice::<models::Response<Vec<models::Update>>>(&body)
             .context("failed to deserialize response")?
             .into()
@@ -141,6 +141,7 @@ impl BotApi {
             .with_context(|| format!("failed to send the `{}` request", method_name))?
             .bytes()
             .await?;
+        debug!(body = ?body, "completed the request");
         serde_json::from_slice::<models::Response<R>>(&body)
             .with_context(|| format!("failed to deserialize `{}` response", method_name))?
             .into()

@@ -1608,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-shared-telegram"
-version = "2.1.3"
+version = "2.1.4"
 dependencies = [
  "anyhow",
  "reqwest",
