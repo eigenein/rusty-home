@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -76,8 +77,8 @@ pub enum UpdatePayload {
     #[serde(rename = "message")]
     Message(Message),
 
-    #[serde(other)]
-    Other,
+    #[serde(rename = "my_chat_member")]
+    MyChatMember(Value), // FIXME
 }
 
 #[derive(Debug, Deserialize)]
@@ -122,9 +123,10 @@ mod tests {
 
     use super::*;
 
+    #[test]
     fn get_updates_timeout_ok() -> Result<()> {
-        let _: Result<Vec<Update>> =
-            from_str::<Response<_>>(r#"{"ok": true, "result": []}"#)?.into();
+        let _: Result<_> =
+            from_str::<Response<Vec<Update>>>(r#"{"ok": true, "result": []}"#)?.into();
         Ok(())
     }
 }

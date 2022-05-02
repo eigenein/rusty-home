@@ -1,6 +1,6 @@
 [package]
 name = "rusty-shared-telegram"
-version = "2.1.5"
+version = "2.2.0"
 edition = "2021"
 description = "Integrates Telegram Bot API"
 build = "build.rs"

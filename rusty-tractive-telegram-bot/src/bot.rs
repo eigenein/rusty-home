@@ -101,7 +101,11 @@ impl Bot {
         let offset = self.get_offset().await?;
         let updates = self
             .bot_api
-            .get_updates(methods::GetUpdates::new(Self::GET_UPDATES_TIMEOUT).offset(offset))
+            .get_updates(
+                methods::GetUpdates::new(Self::GET_UPDATES_TIMEOUT)
+                    .offset(offset)
+                    .allowed_update(methods::AllowedUpdate::Message),
+            )
             .await?;
 
         for update in updates {

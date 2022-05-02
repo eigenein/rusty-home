@@ -12,17 +12,34 @@ pub struct GetUpdates {
 
     #[serde_as(as = "DurationSeconds<u64>")]
     pub timeout: time::Duration,
+
+    pub allowed_updates: Vec<AllowedUpdate>,
 }
 
 impl GetUpdates {
-    pub fn new(timeout: std::time::Duration) -> Self {
-        Self { timeout, offset: 0 }
+    pub fn new(timeout: time::Duration) -> Self {
+        Self {
+            timeout,
+            offset: 0,
+            allowed_updates: Vec::new(),
+        }
     }
 
     pub fn offset(mut self, offset: u64) -> Self {
         self.offset = offset;
         self
     }
+
+    pub fn allowed_update(mut self, allowed_update: AllowedUpdate) -> Self {
+        self.allowed_updates.push(allowed_update);
+        self
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub enum AllowedUpdate {
+    #[serde(rename = "message")]
+    Message,
 }
 
 #[derive(Debug, Serialize)]
