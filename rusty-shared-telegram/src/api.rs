@@ -39,7 +39,7 @@ impl BotApi {
         self.call("getMe", &()).await
     }
 
-    #[instrument(level = "debug", skip_all, fields(offset = payload.offset), err(Debug))]
+    #[instrument(level = "debug", skip_all, fields(offset = payload.offset))]
     pub async fn get_updates(&self, payload: methods::GetUpdates) -> Result<Vec<models::Update>> {
         debug!(timeout = ?payload.timeout, "starting the long polling request…");
         let body = self

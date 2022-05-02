@@ -9,7 +9,7 @@ use tracing::{debug, error, info, instrument};
 
 use crate::{models, Api};
 
-pub struct Microservice {
+pub struct Service {
     api: Api,
     redis: RedisClient,
     heartbeat: Heartbeat,
@@ -17,7 +17,7 @@ pub struct Microservice {
     password: String,
 }
 
-impl Microservice {
+impl Service {
     pub fn new(
         api: Api,
         redis: RedisClient,

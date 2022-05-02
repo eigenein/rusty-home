@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use futures::future::try_join;
 use rusty_shared_telegram::api::BotApi;
+use sentry::integrations::anyhow::capture_anyhow;
 
 use crate::bot::Bot;
 use crate::listener::Listener;
@@ -12,11 +13,17 @@ mod listener;
 mod opts;
 
 #[async_std::main]
-async fn main() -> Result<()> {
+async fn main() {
     let opts: Opts = Opts::parse();
     let _guard = opts.sentry.init();
-    rusty_shared_tracing::init()?;
+    rusty_shared_tracing::init().unwrap();
 
+    if let Err(error) = run(opts).await {
+        capture_anyhow(&error);
+    }
+}
+
+async fn run(opts: Opts) -> Result<()> {
     let bot_api = BotApi::new(opts.bot_token, std::time::Duration::from_secs(5))?;
     let me = bot_api.get_me().await?;
 

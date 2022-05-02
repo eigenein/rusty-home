@@ -1,6 +1,6 @@
 [package]
 name = "rusty-tractive"
-version = "1.1.1"
+version = "1.1.2"
 edition = "2021"
 description = "🐈 Connects Rusty Home to Tractive"
 build = "build.rs"
@@ -13,6 +13,7 @@ clap = { version = "3.1.12", features = ["cargo", "derive", "env"] }
 fred = { version = "5.0.0-beta.1", default-features = false }
 futures = "0.3.21"
 reqwest = { version = "0.11.10", default-features = false, features = ["rustls-tls", "stream", "gzip", "json"] }
+sentry = { version = "0.25.0", default-features = false, features = ["anyhow"] }
 serde = "1.0.136"
 serde_json = "1.0.79"
 serde_with = { version = "1.13.0", features = ["chrono"] }
