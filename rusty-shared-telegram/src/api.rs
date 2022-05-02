@@ -39,9 +39,9 @@ impl BotApi {
         self.call("getMe", &()).await
     }
 
-    #[instrument(level = "debug", skip_all)]
+    #[instrument(level = "debug", skip_all, fields(offset = payload.offset))]
     pub async fn get_updates(&self, payload: methods::GetUpdates) -> Result<Vec<models::Update>> {
-        debug!(offset = payload.offset, timeout = ?payload.timeout, "starting the request…");
+        debug!(timeout = ?payload.timeout, "starting the long polling request…");
         let body = self
             .client
             .post(format!(
@@ -55,6 +55,7 @@ impl BotApi {
             .context("failed to send the request")?
             .bytes()
             .await?;
+
         debug!(body = ?body, "completed the request");
         serde_json::from_slice::<models::Response<Vec<models::Update>>>(&body)
             .context("failed to deserialize response")?

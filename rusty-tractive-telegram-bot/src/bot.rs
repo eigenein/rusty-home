@@ -146,7 +146,7 @@ impl Bot {
             .context("failed to set the offset")
     }
 
-    #[instrument(level = "info", skip_all, err)]
+    #[instrument(level = "info", skip_all)]
     async fn on_update(&self, payload: models::UpdatePayload) -> Result<()> {
         match payload {
             models::UpdatePayload::Message(message) => match message.text {
