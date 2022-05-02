@@ -181,7 +181,7 @@ pub struct StopMessageLiveLocation {
 }
 
 #[derive(Debug, Serialize)]
-pub struct PinMessage {
+pub struct PinChatMessage {
     pub chat_id: models::ChatId,
     pub message_id: i64,
     pub disable_notification: bool,

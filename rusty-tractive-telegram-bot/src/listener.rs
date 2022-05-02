@@ -129,7 +129,7 @@ impl Listener {
             .await?
         {
             Some(message_id) => {
-                // The message is already present in the chat. We need to update it.
+                debug!(message_id = message_id, "editing existing message…");
                 self.bot_api
                     .edit_message_live_location(methods::EditMessageLiveLocation::new(
                         self.chat_id.clone(),
@@ -139,7 +139,7 @@ impl Listener {
                     .await?;
             }
             None => {
-                // A location message is missing. We need to send a new one.
+                info!("sending a new message…");
                 let message_id = self
                     .bot_api
                     .send_location(
@@ -147,7 +147,10 @@ impl Listener {
                     )
                     .await?
                     .id;
-                // Now we attempt to set the message ID in Redis.
+                debug!(
+                    message_id = message_id,
+                    "updating the live location message ID…",
+                );
                 if self
                     .redis
                     .set::<Option<()>, _, _>(
@@ -160,11 +163,16 @@ impl Listener {
                     .await?
                     .is_none()
                 {
-                    // Some other instance did it quicker. We need to delete our message.
+                    info!(message_id = message_id, "deleting our message…");
                     self.bot_api
                         .delete_message(self.chat_id.clone(), message_id)
                         .await?;
-                };
+                } else {
+                    info!(message_id = message_id, "pinning the message…");
+                    self.bot_api
+                        .pin_chat_message(self.chat_id.clone(), message_id, true)
+                        .await?;
+                }
             }
         };
 

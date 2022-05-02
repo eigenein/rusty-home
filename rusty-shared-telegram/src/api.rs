@@ -123,11 +123,26 @@ impl BotApi {
         .await
     }
 
+    #[instrument(level = "info", skip_all, fields(chat_id = ?chat_id, message_id = message_id))]
+    pub async fn pin_chat_message(
+        &self,
+        chat_id: models::ChatId,
+        message_id: i64,
+        disable_notification: bool,
+    ) -> Result<bool> {
+        let payload = methods::PinChatMessage {
+            chat_id,
+            message_id,
+            disable_notification,
+        };
+        self.call("pinChatMessage", &payload).await
+    }
+
     #[instrument(level = "debug", skip_all, fields(method_name = method_name))]
     async fn call<R: DeserializeOwned>(
         &self,
         method_name: &str,
-        body: &impl Serialize,
+        payload: &impl Serialize,
     ) -> Result<R> {
         let text = self
             .client
@@ -135,7 +150,7 @@ impl BotApi {
                 "https://api.telegram.org/bot{}/{}",
                 self.token, method_name,
             ))
-            .json(body)
+            .json(payload)
             .send()
             .await
             .with_context(|| format!("failed to send the `{}` request", method_name))?
