@@ -50,8 +50,8 @@ impl Listener {
             chat_id: models::ChatId::UniqueId(chat_id),
             consumer_name: gethostname().into_string().unwrap(),
             live_location_message_id_key: format!(
-                "rusty:telegram:{}:live_location_message_id",
-                bot_user_id,
+                "rusty:tractive:{}:telegram:{}:live_location_message_id",
+                tracker_id, bot_user_id,
             ),
         };
         Ok(this)
