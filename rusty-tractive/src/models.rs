@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_tracker_status_missing_course_ok() -> Result<()> {
-        from_str::<Message>(
+        let _ = from_str::<Message>(
             // language=json
             r#"{"message":"tracker_status","tracker_id":"CENSORED","tracker_state":"OPERATIONAL","position":{"time":1651251487,"latlong":[1.0,-1.0],"sensor_used":"PHONE","accuracy":19,"altitude":44,"nearby_user_id":"6016cffc44a145ccd44a32aa","time_rcvd":1651251673},"hardware":{"time":1651251684,"battery_level":77,"temperature_state":"NORMAL","power_saving_zone_id":null,"clip_mounted_state":false},"charging_state":"NOT_CHARGING","battery_state":"REGULAR"}"#,
         )?;

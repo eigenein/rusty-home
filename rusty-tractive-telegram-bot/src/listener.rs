@@ -8,7 +8,7 @@ use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::{methods, models};
-use tracing::{error, info, instrument};
+use tracing::{debug, error, info, instrument};
 
 pub struct Listener {
     redis: RedisClient,
@@ -103,15 +103,16 @@ impl Listener {
     async fn on_position_entry(
         &self,
         entry_id: &str,
-        entry: HashMap<String, String>,
+        fields: HashMap<String, String>,
     ) -> Result<()> {
+        debug!(fields = ?fields);
         let location = methods::Location::new(
             self.chat_id.clone(),
-            get_parsed(&entry, "lat")?,
-            get_parsed(&entry, "lon")?,
+            get_parsed(&fields, "lat")?,
+            get_parsed(&fields, "lon")?,
         );
-        let location = location.horizontal_accuracy(get_parsed(&entry, "accuracy")?);
-        let location = match entry.get("course") {
+        let location = location.horizontal_accuracy(get_parsed(&fields, "accuracy")?);
+        let location = match fields.get("course") {
             Some(course) => location.heading(course.parse::<u16>()?),
             None => location,
         };
