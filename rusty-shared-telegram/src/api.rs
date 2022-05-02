@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 use crate::{methods, models};
 
@@ -39,9 +39,10 @@ impl BotApi {
         self.call("getMe", &()).await
     }
 
-    #[instrument(level = "debug", skip_all, err)]
+    #[instrument(level = "debug", skip_all)]
     pub async fn get_updates(&self, payload: methods::GetUpdates) -> Result<Vec<models::Update>> {
-        self.client
+        let body = self
+            .client
             .post(format!(
                 "https://api.telegram.org/bot{}/getUpdates",
                 self.token,
@@ -51,8 +52,10 @@ impl BotApi {
             .send()
             .await
             .context("failed to send the request")?
-            .json::<models::Response<Vec<models::Update>>>()
-            .await
+            .bytes()
+            .await?;
+        debug!(body = ?body);
+        serde_json::from_slice::<models::Response<Vec<models::Update>>>(&body)
             .context("failed to deserialize response")?
             .into()
     }
@@ -124,7 +127,8 @@ impl BotApi {
         method_name: &str,
         body: &impl Serialize,
     ) -> Result<R> {
-        self.client
+        let body = self
+            .client
             .post(format!(
                 "https://api.telegram.org/bot{}/{}",
                 self.token, method_name,
@@ -133,8 +137,9 @@ impl BotApi {
             .send()
             .await
             .with_context(|| format!("failed to send the `{}` request", method_name))?
-            .json::<models::Response<R>>()
-            .await
+            .bytes()
+            .await?;
+        serde_json::from_slice::<models::Response<R>>(&body)
             .with_context(|| format!("failed to deserialize `{}` response", method_name))?
             .into()
     }

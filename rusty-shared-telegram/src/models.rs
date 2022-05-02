@@ -114,3 +114,17 @@ pub enum ParseMode {
     #[serde(rename = "HTML")]
     Html,
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use serde_json::from_str;
+
+    use super::*;
+
+    fn get_updates_timeout_ok() -> Result<()> {
+        let _: Result<Vec<Update>> =
+            from_str::<Response<_>>(r#"{"ok": true, "result": []}"#)?.into();
+        Ok(())
+    }
+}
