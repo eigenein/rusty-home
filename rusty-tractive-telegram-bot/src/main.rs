@@ -2,6 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use futures::future::try_join;
 use rusty_shared_telegram::api::BotApi;
+use rusty_shared_telegram::methods;
+use rusty_shared_telegram::methods::Method;
 use tracing::error;
 
 use crate::bot::Bot;
@@ -25,7 +27,7 @@ async fn main() {
 
 async fn run(opts: Opts) -> Result<()> {
     let bot_api = BotApi::new(opts.bot_token, std::time::Duration::from_secs(5))?;
-    let me = bot_api.get_me().await?;
+    let me = methods::GetMe.call(&bot_api).await?;
 
     let tracker_id = opts.tracker_id.to_lowercase();
     let bot = {

@@ -1,9 +1,37 @@
+use std::fmt::Debug;
 use std::time;
 
+use anyhow::Result;
+use async_trait::async_trait;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_with::{serde_as, DurationSeconds};
 
+use crate::api::BotApi;
 use crate::models;
+
+#[async_trait]
+pub trait Method: Debug + Sized + Serialize {
+    type Output: DeserializeOwned;
+
+    /// The method's name in Telegram Bot API.
+    const NAME: &'static str;
+
+    /// Call the method on the specified connection.
+    async fn call(&self, api: &BotApi) -> Result<Self::Output> {
+        api.call(self).await
+    }
+}
+
+/// https://core.telegram.org/bots/api#getme
+#[derive(Debug, Serialize)]
+pub struct GetMe;
+
+impl Method for GetMe {
+    type Output = models::User;
+
+    const NAME: &'static str = "getMe";
+}
 
 #[serde_as]
 #[derive(Debug, Serialize)]
@@ -14,6 +42,12 @@ pub struct GetUpdates {
     pub timeout: time::Duration,
 
     pub allowed_updates: Vec<AllowedUpdate>,
+}
+
+impl Method for GetUpdates {
+    type Output = Vec<models::Update>;
+
+    const NAME: &'static str = "getUpdates";
 }
 
 impl GetUpdates {
@@ -75,9 +109,16 @@ impl SendMessage {
     }
 }
 
+/// https://core.telegram.org/bots/api#setmycommands
 #[derive(Debug, Default, Serialize)]
 pub struct SetMyCommands {
     pub commands: Vec<models::BotCommand>,
+}
+
+impl Method for SetMyCommands {
+    type Output = bool;
+
+    const NAME: &'static str = "setMyCommands";
 }
 
 impl SetMyCommands {
