@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 use std::time;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_with::{serde_as, DurationSeconds};
+use tracing::{debug, instrument};
 
 use crate::api::BotApi;
 use crate::models;
@@ -18,8 +19,23 @@ pub trait Method: Debug + Sized + Serialize {
     const NAME: &'static str;
 
     /// Call the method on the specified connection.
+    #[instrument(level = "debug", skip_all, fields(method_name = Self::NAME))]
     async fn call(&self, api: &BotApi) -> Result<Self::Output> {
-        api.call(self).await
+        debug!(self = ?self);
+        let text = api
+            .client
+            .post(format!("{}/{}", api.base_url, Self::NAME))
+            .json(self)
+            .send()
+            .await
+            .with_context(|| format!("failed to send the `{}` request", Self::NAME))?
+            .text_with_charset("utf-8")
+            .await?;
+
+        debug!(response.text = ?text, "completed the request");
+        serde_json::from_str::<models::Response<Self::Output>>(&text)
+            .with_context(|| format!("failed to deserialize `{}` response", Self::NAME))?
+            .into()
     }
 }
 
@@ -44,10 +60,32 @@ pub struct GetUpdates {
     pub allowed_updates: Vec<AllowedUpdate>,
 }
 
+#[async_trait]
 impl Method for GetUpdates {
     type Output = Vec<models::Update>;
 
     const NAME: &'static str = "getUpdates";
+
+    /// Needs to be implemented separately because of the timeout requirement.
+    #[instrument(level = "debug", skip_all, fields(method_name = Self::NAME))]
+    async fn call(&self, api: &BotApi) -> Result<Self::Output> {
+        debug!(self = ?self, "starting the long polling request…");
+        let text = api
+            .client
+            .post(format!("{}/{}", api.base_url, Self::NAME))
+            .json(self)
+            .timeout(api.timeout + self.timeout)
+            .send()
+            .await
+            .context("failed to send the request")?
+            .text_with_charset("utf-8")
+            .await?;
+
+        debug!(response.text = ?text, "completed the long polling request");
+        serde_json::from_str::<models::Response<Self::Output>>(&text)
+            .context("failed to deserialize response")?
+            .into()
+    }
 }
 
 impl GetUpdates {
@@ -76,6 +114,7 @@ pub enum AllowedUpdate {
     Message,
 }
 
+/// https://core.telegram.org/bots/api#sendmessage
 #[derive(Debug, Serialize)]
 pub struct SendMessage {
     pub chat_id: models::ChatId,
@@ -86,6 +125,12 @@ pub struct SendMessage {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_message_id: Option<i64>,
+}
+
+impl Method for SendMessage {
+    type Output = models::Message;
+
+    const NAME: &'static str = "sendMessage";
 }
 
 impl SendMessage {

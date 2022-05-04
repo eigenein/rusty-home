@@ -97,13 +97,10 @@ impl Bot {
 
     async fn handle_updates(&self) -> Result<()> {
         let offset = self.get_offset().await?;
-        let updates = self
-            .bot_api
-            .get_updates(
-                methods::GetUpdates::new(Self::GET_UPDATES_TIMEOUT)
-                    .offset(offset)
-                    .allowed_update(methods::AllowedUpdate::Message),
-            )
+        let updates = methods::GetUpdates::new(Self::GET_UPDATES_TIMEOUT)
+            .offset(offset)
+            .allowed_update(methods::AllowedUpdate::Message)
+            .call(&self.bot_api)
             .await?;
 
         for update in updates {
@@ -153,16 +150,14 @@ impl Bot {
         match payload {
             models::UpdatePayload::Message(message) => match message.text {
                 Some(text) if text.starts_with("/start") => {
-                    self.bot_api
-                        .send_message(
-                            methods::SendMessage::new(
-                                message.chat.id.into(),
-                                format!(r#"👋 Your chat ID is `{}`\."#, message.chat.id),
-                            )
-                            .parse_mode(models::ParseMode::MarkdownV2)
-                            .reply_to_message_id(message.id),
-                        )
-                        .await?;
+                    methods::SendMessage::new(
+                        message.chat.id.into(),
+                        format!(r#"👋 Your chat ID is `{}`\."#, message.chat.id),
+                    )
+                    .parse_mode(models::ParseMode::MarkdownV2)
+                    .reply_to_message_id(message.id)
+                    .call(&self.bot_api)
+                    .await?;
                 }
                 _ => {
                     debug!(

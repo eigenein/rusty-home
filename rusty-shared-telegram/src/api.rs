@@ -1,10 +1,11 @@
+use std::time;
+
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use tracing::{debug, instrument};
 
-use crate::methods::Method;
 use crate::{methods, models};
 
 const USER_AGENT: &str = concat!(
@@ -15,73 +16,24 @@ const USER_AGENT: &str = concat!(
 
 #[derive(Clone)]
 pub struct BotApi {
-    client: Client,
-    base_url: String,
-    timeout: std::time::Duration,
+    pub(crate) client: Client,
+    pub(crate) base_url: String,
+    pub(crate) timeout: time::Duration,
 }
 
 impl BotApi {
     #[instrument(level = "debug", skip_all)]
-    pub fn new(token: String, timeout: std::time::Duration) -> Result<Self> {
+    pub fn new(token: String, timeout: time::Duration) -> Result<Self> {
         let client = Client::builder()
             .user_agent(USER_AGENT)
             .timeout(timeout)
             .build()?;
-        Ok(Self {
+        let this = Self {
             client,
             base_url: format!("https://api.telegram.org/bot{}", token),
             timeout,
-        })
-    }
-
-    #[instrument(level = "debug", skip_all, fields(method_name = M::NAME))]
-    pub async fn call<M: Method>(&self, method: &M) -> Result<M::Output> {
-        debug!(method = ?method);
-        let text = self
-            .client
-            .post(format!("{}/{}", self.base_url, M::NAME))
-            .json(&method)
-            .send()
-            .await
-            .with_context(|| format!("failed to send the `{}` request", M::NAME))?
-            .text_with_charset("utf-8")
-            .await?;
-
-        debug!(text = ?text, "completed the request");
-        serde_json::from_str::<models::Response<M::Output>>(&text)
-            .with_context(|| format!("failed to deserialize `{}` response", M::NAME))?
-            .into()
-    }
-
-    /// Needs to be implemented separately because of the timeout requirement.
-    /// TODO: find out how to make this work with [`Self::call`].
-    #[instrument(level = "debug", skip_all, fields(offset = payload.offset))]
-    pub async fn get_updates(
-        &self,
-        payload: methods::GetUpdates,
-    ) -> Result<<methods::GetUpdates as Method>::Output> {
-        debug!(timeout = ?payload.timeout, "starting the long polling request…");
-        let text = self
-            .client
-            .post(format!("{}/{}", self.base_url, methods::GetUpdates::NAME))
-            .json(&payload)
-            .timeout(self.timeout + payload.timeout)
-            .send()
-            .await
-            .context("failed to send the request")?
-            .text_with_charset("utf-8")
-            .await?;
-
-        debug!(text = ?text, "completed the long polling request");
-        serde_json::from_str::<models::Response<Vec<models::Update>>>(&text)
-            .context("failed to deserialize response")?
-            .into()
-    }
-
-    /// https://core.telegram.org/bots/api#sendmessage
-    #[instrument(level = "info", skip_all, fields(chat_id = ?payload.chat_id))]
-    pub async fn send_message(&self, payload: methods::SendMessage) -> Result<models::Message> {
-        self.call_legacy("sendMessage", &payload).await
+        };
+        Ok(this)
     }
 
     #[instrument(level = "info", skip_all, fields(chat_id = ?chat_id, message_id = message_id))]
