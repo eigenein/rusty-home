@@ -15,7 +15,7 @@ const USER_AGENT: &str = concat!(
 #[derive(Clone)]
 pub struct BotApi {
     client: Client,
-    token: String,
+    base_url: String,
     timeout: std::time::Duration,
 }
 
@@ -28,7 +28,7 @@ impl BotApi {
             .build()?;
         Ok(Self {
             client,
-            token,
+            base_url: format!("https://api.telegram.org/bot{}", token),
             timeout,
         })
     }
@@ -44,10 +44,7 @@ impl BotApi {
         debug!(timeout = ?payload.timeout, "starting the long polling request…");
         let text = self
             .client
-            .post(format!(
-                "https://api.telegram.org/bot{}/getUpdates",
-                self.token,
-            ))
+            .post(format!("{}/getUpdates", self.base_url))
             .json(&payload)
             .timeout(self.timeout + payload.timeout)
             .send()
@@ -146,10 +143,7 @@ impl BotApi {
     ) -> Result<R> {
         let text = self
             .client
-            .post(format!(
-                "https://api.telegram.org/bot{}/{}",
-                self.token, method_name,
-            ))
+            .post(format!("{}/{}", self.base_url, method_name))
             .json(payload)
             .send()
             .await
