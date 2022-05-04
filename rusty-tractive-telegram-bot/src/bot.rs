@@ -7,6 +7,7 @@ use fred::prelude::*;
 use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
+use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use tracing::{debug, error, info, instrument, warn};
 
@@ -23,9 +24,7 @@ pub struct Bot {
 }
 
 impl Bot {
-    const GET_UPDATES_TIMEOUT: time::Duration =
-        time::Duration::from_secs(Self::GET_UPDATES_TIMEOUT_SECS);
-    const GET_UPDATES_TIMEOUT_SECS: u64 = 60;
+    const GET_UPDATES_TIMEOUT: time::Duration = time::Duration::from_secs(60);
 
     #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id))]
     pub fn new(
@@ -46,13 +45,12 @@ impl Bot {
 
     pub async fn run(self) -> Result<()> {
         info!("setting up the bot…");
-        self.bot_api
-            .set_my_commands(
-                methods::SetMyCommands::default().command(models::BotCommand {
-                    command: Cow::Borrowed("start"),
-                    description: Cow::Borrowed("Tells your chat ID"),
-                }),
-            )
+        methods::SetMyCommands::default()
+            .command(models::BotCommand {
+                command: Cow::Borrowed("start"),
+                description: Cow::Borrowed("Tells your chat ID"),
+            })
+            .call(&self.bot_api)
             .await?;
 
         info!("running the bot…");
@@ -81,7 +79,7 @@ impl Bot {
             .set::<Option<()>, _, _>(
                 &self.get_updates_key,
                 &self.hostname,
-                Some(Expiration::EX(Self::GET_UPDATES_TIMEOUT_SECS as i64)),
+                Some(Expiration::EX(Self::GET_UPDATES_TIMEOUT.as_secs() as i64)),
                 Some(SetOptions::NX),
                 false,
             )
