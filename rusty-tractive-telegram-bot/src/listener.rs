@@ -7,6 +7,7 @@ use fred::prelude::*;
 use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_telegram::api::BotApi;
+use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use tracing::{debug, error, info, instrument};
 
@@ -130,21 +131,15 @@ impl Listener {
         {
             Some(message_id) => {
                 debug!(message_id = message_id, "editing existing message…");
-                self.bot_api
-                    .edit_message_live_location(methods::EditMessageLiveLocation::new(
-                        self.chat_id.clone(),
-                        message_id,
-                        location,
-                    ))
+                methods::EditMessageLiveLocation::new(self.chat_id.clone(), message_id, location)
+                    .call(&self.bot_api)
                     .await?;
             }
             None => {
                 info!("sending a new message…");
-                let message_id = self
-                    .bot_api
-                    .send_location(
-                        methods::SendLocation::new(location).live_period(Self::LIVE_PERIOD),
-                    )
+                let message_id = methods::SendLocation::new(location)
+                    .live_period(Self::LIVE_PERIOD)
+                    .call(&self.bot_api)
                     .await?
                     .id;
                 debug!(
@@ -164,14 +159,21 @@ impl Listener {
                     .is_none()
                 {
                     info!(message_id = message_id, "deleting our message…");
-                    self.bot_api
-                        .delete_message(self.chat_id.clone(), message_id)
-                        .await?;
+                    methods::DeleteMessage {
+                        chat_id: self.chat_id.clone(),
+                        message_id,
+                    }
+                    .call(&self.bot_api)
+                    .await?;
                 } else {
                     info!(message_id = message_id, "pinning the message…");
-                    self.bot_api
-                        .pin_chat_message(self.chat_id.clone(), message_id, true)
-                        .await?;
+                    methods::PinChatMessage {
+                        chat_id: self.chat_id.clone(),
+                        message_id,
+                        disable_notification: true,
+                    }
+                    .call(&self.bot_api)
+                    .await?;
                 }
             }
         };

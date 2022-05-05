@@ -209,6 +209,7 @@ impl Location {
     }
 }
 
+/// https://core.telegram.org/bots/api#sendlocation
 #[serde_as]
 #[derive(Debug, Serialize)]
 pub struct SendLocation {
@@ -217,6 +218,11 @@ pub struct SendLocation {
 
     #[serde_as(as = "Option<DurationSeconds<u64>>")]
     pub live_period: Option<time::Duration>,
+}
+
+impl Method for SendLocation {
+    type Output = models::Message;
+    const NAME: &'static str = "sendLocation";
 }
 
 impl SendLocation {
@@ -244,6 +250,11 @@ pub struct EditMessageLiveLocation {
     pub location: Location,
 }
 
+impl Method for EditMessageLiveLocation {
+    type Output = models::Message;
+    const NAME: &'static str = "editMessageLiveLocation";
+}
+
 impl EditMessageLiveLocation {
     pub fn new(chat_id: models::ChatId, message_id: i64, location: Location) -> Self {
         Self {
@@ -260,10 +271,20 @@ pub struct DeleteMessage {
     pub message_id: i64,
 }
 
+impl Method for DeleteMessage {
+    type Output = bool;
+    const NAME: &'static str = "deleteMessage";
+}
+
 #[derive(Debug, Serialize)]
 pub struct StopMessageLiveLocation {
     pub chat_id: models::ChatId,
     pub message_id: i64,
+}
+
+impl Method for StopMessageLiveLocation {
+    type Output = models::Message;
+    const NAME: &'static str = "stopMessageLiveLocation";
 }
 
 #[derive(Debug, Serialize)]
@@ -271,4 +292,9 @@ pub struct PinChatMessage {
     pub chat_id: models::ChatId,
     pub message_id: i64,
     pub disable_notification: bool,
+}
+
+impl Method for PinChatMessage {
+    type Output = bool;
+    const NAME: &'static str = "pinChatMessage";
 }
