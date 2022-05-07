@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use fred::prelude::*;
 use futures::TryStreamExt;
 use rusty_shared_opts::heartbeat::Heartbeat;
-use rusty_shared_redis::ignore_unknown_error;
+use rusty_shared_redis::{ignore_unknown_error, Redis};
 use tracing::{debug, error, info, instrument};
 
 use crate::opts::ServiceOpts;
@@ -12,13 +12,13 @@ use crate::{models, Api};
 
 pub struct Service {
     api: Api,
-    redis: RedisClient,
+    redis: Redis,
     heartbeat: Heartbeat,
     opts: ServiceOpts,
 }
 
 impl Service {
-    pub fn new(api: Api, redis: RedisClient, heartbeat: Heartbeat, opts: ServiceOpts) -> Self {
+    pub fn new(api: Api, redis: Redis, heartbeat: Heartbeat, opts: ServiceOpts) -> Self {
         Self {
             api,
             redis,
@@ -28,6 +28,7 @@ impl Service {
     }
 
     pub async fn run(self) -> ! {
+        // TODO: remove the loop.
         loop {
             if let Err(error) = self.loop_().await {
                 error!("{:#}", error);
@@ -38,6 +39,7 @@ impl Service {
     async fn loop_(&self) -> Result<()> {
         let (user_id, access_token) = match self.get_authentication().await {
             Ok(access_token) => access_token,
+            // TODO: replace `panic!` with an error.
             Err(error) => panic!("failed to obtain the access token: {:#}", error),
         };
 
@@ -52,7 +54,7 @@ impl Service {
     #[tracing::instrument(level = "debug", skip_all, fields(self.email = self.opts.email.as_str()))]
     async fn get_authentication(&self) -> Result<(String, String)> {
         let key = format!("rusty:tractive:{}:authentication", self.opts.email);
-        let authentication: HashMap<String, String> = self.redis.hgetall(&key).await?;
+        let authentication: HashMap<String, String> = self.redis.client.hgetall(&key).await?;
         let result = match (
             authentication.get("user_id"),
             authentication.get("access_token"),
@@ -74,18 +76,18 @@ impl Service {
         Ok(result)
     }
 
-    #[instrument(level = "info", skip_all, fields(user_id = token.user_id.as_str()))]
+    #[instrument(level = "info", skip_all, fields(user_id = ?token.user_id))]
     async fn store_access_token(&self, key: &str, token: &models::Token) -> Result<()> {
         let values = vec![
             ("user_id", &token.user_id),
             ("access_token", &token.access_token),
         ];
-        let transaction = self.redis.multi(true).await?;
+        let transaction = self.redis.client.multi(true).await?;
         transaction.hset(key, values).await?;
         transaction
             .expire_at(key, token.expires_at.timestamp())
             .await?;
-        transaction.exec().await?;
+        transaction.exec().await?; // FIXME: this may fail.
         Ok(())
     }
 
@@ -118,7 +120,7 @@ impl Service {
         Ok(())
     }
 
-    #[instrument(level = "info", skip_all, fields(tracker_id = payload.tracker_id.as_str()))]
+    #[instrument(level = "info", skip_all, fields(tracker_id = ?payload.tracker_id))]
     async fn on_tracker_status(&self, payload: models::TrackerStatusMessage) -> Result<()> {
         let tracker_id = payload.tracker_id.to_lowercase();
         if let Some(hardware) = payload.hardware {
@@ -133,12 +135,9 @@ impl Service {
 
     #[instrument(level = "info", skip_all)]
     async fn on_hardware_update(&self, tracker_id: &str, hardware: models::Hardware) -> Result<()> {
-        info!(
-            timestamp = hardware.timestamp.to_string().as_str(),
-            battery_level = hardware.battery_level,
-            "⌚️",
-        );
+        info!(timestamp = ?hardware.timestamp, battery_level = hardware.battery_level, "⌚️");
         self.redis
+            .client
             .xadd(
                 format!("rusty:tractive:{}:hardware", tracker_id),
                 false,
@@ -158,7 +157,7 @@ impl Service {
     async fn on_position_update(&self, tracker_id: &str, position: models::Position) -> Result<()> {
         let (latitude, longitude) = position.latlong;
         info!(
-            timestamp = position.timestamp.to_string().as_str(),
+            timestamp = ?position.timestamp,
             latitude = latitude,
             longitude = longitude,
             accuracy = position.accuracy,
@@ -175,6 +174,7 @@ impl Service {
             fields.push(("course", course.to_string()));
         }
         self.redis
+            .client
             .xadd(
                 format!("rusty:tractive:{}:position", tracker_id),
                 false,

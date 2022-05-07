@@ -5,13 +5,14 @@ use anyhow::{Context, Result};
 use async_std::task;
 use fred::prelude::*;
 use gethostname::gethostname;
+use rusty_shared_redis::Redis;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use tracing::{debug, error, info, instrument, warn};
 
 pub struct Bot {
-    redis: RedisClient,
+    redis: Redis,
     bot_api: BotApi,
     hostname: String,
 
@@ -25,7 +26,7 @@ impl Bot {
     const GET_UPDATES_TIMEOUT: time::Duration = time::Duration::from_secs(60);
 
     #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id))]
-    pub fn new(redis: RedisClient, bot_api: BotApi, bot_user_id: i64) -> Self {
+    pub fn new(redis: Redis, bot_api: BotApi, bot_user_id: i64) -> Self {
         Self {
             redis,
             bot_api,
@@ -52,7 +53,7 @@ impl Bot {
             } else {
                 // Some other instance claimed the slot and is handling updates.
                 // We'll sleep the next time slot would be available.
-                let ttl_millis: u64 = self.redis.pttl(&self.get_updates_key).await?;
+                let ttl_millis: u64 = self.redis.client.pttl(&self.get_updates_key).await?;
                 debug!(ttl_millis = ttl_millis, "didn't manage to claim a slot");
                 task::sleep(time::Duration::from_millis(ttl_millis + 1)).await;
             }
@@ -68,6 +69,7 @@ impl Bot {
     async fn claim_get_updates(&self) -> Result<bool> {
         let response = self
             .redis
+            .client
             .set::<Option<()>, _, _>(
                 &self.get_updates_key,
                 &self.hostname,
@@ -111,7 +113,7 @@ impl Bot {
         }
 
         // Unclaim the time slot should we finish sooner.
-        self.redis.del(&self.get_updates_key).await?;
+        self.redis.client.del(&self.get_updates_key).await?;
 
         Ok(())
     }
@@ -121,6 +123,7 @@ impl Bot {
     async fn get_offset(&self) -> Result<u64> {
         let offset = self
             .redis
+            .client
             .get::<Option<u64>, _>(&self.offset_key)
             .await
             .context("failed to retrieve the offset")?
@@ -131,6 +134,7 @@ impl Bot {
     #[instrument(level = "info", skip_all, fields(offset = offset))]
     async fn set_offset(&self, offset: u64) -> Result<()> {
         self.redis
+            .client
             .set(&self.offset_key, offset, None, None, false)
             .await
             .context("failed to set the offset")

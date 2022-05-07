@@ -7,13 +7,14 @@ use fred::prelude::*;
 use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
+use rusty_shared_redis::Redis;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use tracing::{debug, error, info, instrument};
 
 pub struct Listener {
-    redis: RedisClient,
+    redis: Redis,
     bot_api: BotApi,
     heartbeat: Heartbeat,
 
@@ -34,7 +35,7 @@ impl Listener {
     const LIVE_PERIOD: time::Duration = time::Duration::from_secs(86400);
 
     pub async fn new(
-        redis: RedisClient,
+        redis: Redis,
         bot_api: BotApi,
         heartbeat: Heartbeat,
         bot_user_id: i64,
@@ -43,7 +44,7 @@ impl Listener {
     ) -> Result<Self> {
         let position_stream_key = format!("rusty:tractive:{}:position", tracker_id);
         let group_name = format!("rusty:telegram:{}", bot_user_id);
-        rusty_shared_redis::create_consumer_group(&redis, &position_stream_key, &group_name)
+        rusty_shared_redis::create_consumer_group(&redis.client, &position_stream_key, &group_name)
             .await?;
 
         let this = Self {
@@ -80,6 +81,7 @@ impl Listener {
     async fn handle_entries(&self) -> Result<()> {
         let response: XReadResponse<String, String, String, String> = self
             .redis
+            .client
             .xreadgroup_map(
                 &self.group_name,
                 &self.consumer_name,
@@ -100,7 +102,9 @@ impl Listener {
                             "failed to handle the stream entry: {:#}", error,
                         );
                     } else {
+                        // TODO: `noack` is set to `true`, thus this is not needed.
                         self.redis
+                            .client
                             .xack(&stream_id, &self.group_name, entry_id)
                             .await?;
                     }
@@ -136,6 +140,7 @@ impl Listener {
 
         match self
             .redis
+            .client
             .get::<Option<i64>, _>(&self.live_location_message_id_key)
             .await?
         {
@@ -158,6 +163,7 @@ impl Listener {
                 );
                 if self
                     .redis
+                    .client
                     .set::<Option<()>, _, _>(
                         &self.live_location_message_id_key,
                         message_id,
@@ -175,6 +181,7 @@ impl Listener {
                         .await?;
                     self.delete_old_messages().await?;
                     self.redis
+                        .client
                         .rpush(&self.pinned_message_ids_key, message_id)
                         .await?;
                 } else {
@@ -193,6 +200,7 @@ impl Listener {
     async fn delete_old_messages(&self) -> Result<()> {
         while let Some(message_id) = self
             .redis
+            .client
             .lpop::<Option<i64>, _>(&self.pinned_message_ids_key, None)
             .await?
         {

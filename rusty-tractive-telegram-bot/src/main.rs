@@ -14,6 +14,7 @@ mod bot;
 mod listener;
 mod opts;
 
+// TODO: extract to a shared package.
 #[async_std::main]
 async fn main() {
     let opts: Opts = Opts::parse();
@@ -31,14 +32,17 @@ async fn run(opts: Opts) -> Result<()> {
 
     let tracker_id = opts.tracker_id.to_lowercase();
     let bot = {
-        let redis =
-            rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name.clone())
-                .await?;
+        let redis = rusty_shared_redis::Redis::connect(
+            &opts.redis.addresses,
+            opts.redis.service_name.clone(),
+        )
+        .await?;
         Bot::new(redis, bot_api.clone(), me.id)
     };
     let listener = {
         let redis =
-            rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name).await?;
+            rusty_shared_redis::Redis::connect(&opts.redis.addresses, opts.redis.service_name)
+                .await?;
         Listener::new(
             redis,
             bot_api,

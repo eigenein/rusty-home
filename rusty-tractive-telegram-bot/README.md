@@ -1,6 +1,6 @@
 # 🐈📲 `rusty-tractive-telegram`
 
-Connects Rusty Tractive to Telegram.
+Connects [Tractive](https://tractive.com) to [Telegram](https://core.telegram.org/bots/api).
 
 ## 💓 Heartbeat
 
