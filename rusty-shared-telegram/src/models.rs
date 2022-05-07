@@ -63,6 +63,12 @@ impl From<i64> for ChatId {
     }
 }
 
+impl From<&ChatId> for ChatId {
+    fn from(chat_id: &ChatId) -> Self {
+        chat_id.clone()
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Update {
     #[serde(rename = "update_id")]

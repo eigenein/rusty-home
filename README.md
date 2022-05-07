@@ -27,13 +27,13 @@ Each host is running a set of microservices – ideally, all of them – via `sy
 
 - [ ] [tado°](rusty-tado)
 - [x] [Tractive](rusty-tractive)
-- [ ] [Tractive Telegram Bot](rusty-tractive-telegram-bot)
+- [x] [Tractive Telegram Bot](rusty-tractive-telegram-bot)
 
 ## Installation
 
+For Raspberry Zero W you can grab the binaries from the [releases](https://github.com/eigenein/rusty-home/releases).
+
 ```shell
-# Of course, you can choose which binaries you'd like to install.
+# Choose which binaries you'd like to install.
 cargo install --git https://github.com/eigenein/rusty-home.git --locked rusty-tractive rusty-tado
 ```
-
-I suggest that you have at least 1 GB of RAM or swap space in order to compile it from source. On Raspberry Pi Zero W setting `CONF_SWAPSIZE=1024` in `/etc/dphys-swapfile` seems to work fine.

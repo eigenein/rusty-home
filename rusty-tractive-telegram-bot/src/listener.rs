@@ -26,7 +26,7 @@ pub struct Listener {
     group_name: String,
 
     position_stream_key: String,
-
+    pinned_message_ids_key: String,
     live_location_message_id_key: String,
 }
 
@@ -56,6 +56,10 @@ impl Listener {
             consumer_name: gethostname().into_string().unwrap(),
             live_location_message_id_key: format!(
                 "rusty:tractive:{}:telegram:{}:live_location_message_id",
+                tracker_id, bot_user_id,
+            ),
+            pinned_message_ids_key: format!(
+                "rusty:tractive:{}:telegram:{}:pinned_message_ids",
                 tracker_id, bot_user_id,
             ),
         };
@@ -162,28 +166,47 @@ impl Listener {
                         false,
                     )
                     .await?
-                    .is_none()
+                    .is_some()
                 {
-                    info!(message_id = message_id, "deleting our message…");
-                    methods::DeleteMessage {
-                        chat_id: self.chat_id.clone(),
-                        message_id,
-                    }
-                    .call(&self.bot_api)
-                    .await?;
-                } else {
                     info!(message_id = message_id, "pinning the message…");
-                    methods::PinChatMessage {
-                        chat_id: self.chat_id.clone(),
-                        message_id,
-                        disable_notification: true,
-                    }
-                    .call(&self.bot_api)
-                    .await?;
+                    methods::PinChatMessage::new(&self.chat_id, message_id)
+                        .disable_notification()
+                        .call(&self.bot_api)
+                        .await?;
+                    self.delete_old_messages().await?;
+                    self.redis
+                        .rpush(&self.pinned_message_ids_key, message_id)
+                        .await?;
+                } else {
+                    info!(message_id = message_id, "too late – deleting the message…");
+                    methods::DeleteMessage::new(&self.chat_id, message_id)
+                        .call(&self.bot_api)
+                        .await?;
                 }
             }
         };
 
+        Ok(())
+    }
+
+    #[instrument(level = "info", skip_all)]
+    async fn delete_old_messages(&self) -> Result<()> {
+        while let Some(message_id) = self
+            .redis
+            .lpop::<Option<i64>, _>(&self.pinned_message_ids_key, None)
+            .await?
+        {
+            info!(
+                message_id = message_id,
+                "unpinning and deleting the old message…",
+            );
+            methods::UnpinChatMessage::new(&self.chat_id, message_id)
+                .call(&self.bot_api)
+                .await?;
+            methods::DeleteMessage::new(&self.chat_id, message_id)
+                .call(&self.bot_api)
+                .await?;
+        }
         Ok(())
     }
 }

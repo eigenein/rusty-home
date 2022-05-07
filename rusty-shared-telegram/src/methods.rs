@@ -222,6 +222,7 @@ pub struct SendLocation {
 
 impl Method for SendLocation {
     type Output = models::Message;
+
     const NAME: &'static str = "sendLocation";
 }
 
@@ -252,6 +253,7 @@ pub struct EditMessageLiveLocation {
 
 impl Method for EditMessageLiveLocation {
     type Output = models::Message;
+
     const NAME: &'static str = "editMessageLiveLocation";
 }
 
@@ -273,7 +275,17 @@ pub struct DeleteMessage {
 
 impl Method for DeleteMessage {
     type Output = bool;
+
     const NAME: &'static str = "deleteMessage";
+}
+
+impl DeleteMessage {
+    pub fn new(chat_id: impl Into<models::ChatId>, message_id: i64) -> Self {
+        Self {
+            chat_id: chat_id.into(),
+            message_id,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -284,6 +296,7 @@ pub struct StopMessageLiveLocation {
 
 impl Method for StopMessageLiveLocation {
     type Output = models::Message;
+
     const NAME: &'static str = "stopMessageLiveLocation";
 }
 
@@ -296,5 +309,43 @@ pub struct PinChatMessage {
 
 impl Method for PinChatMessage {
     type Output = bool;
+
     const NAME: &'static str = "pinChatMessage";
+}
+
+impl PinChatMessage {
+    pub fn new(chat_id: impl Into<models::ChatId>, message_id: i64) -> Self {
+        Self {
+            chat_id: chat_id.into(),
+            message_id,
+            disable_notification: false,
+        }
+    }
+
+    pub fn disable_notification(mut self) -> Self {
+        self.disable_notification = true;
+        self
+    }
+}
+
+#[must_use]
+#[derive(Debug, Serialize)]
+pub struct UnpinChatMessage {
+    pub chat_id: models::ChatId,
+    pub message_id: i64,
+}
+
+impl Method for UnpinChatMessage {
+    type Output = bool;
+
+    const NAME: &'static str = "unpinChatMessage";
+}
+
+impl UnpinChatMessage {
+    pub fn new(chat_id: impl Into<models::ChatId>, message_id: i64) -> Self {
+        Self {
+            chat_id: chat_id.into(),
+            message_id,
+        }
+    }
 }
