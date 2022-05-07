@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
-fred = { version = "5.0.0-beta.1", default-features = false }
+fred = { version = "5.0.0", default-features = false }
 tracing = "0.1.34"
