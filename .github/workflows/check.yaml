@@ -59,3 +59,51 @@ jobs:
 
       - name: Build for Raspberry Pi Zero W
         run: cross build --target arm-unknown-linux-gnueabihf --release
+
+      - name: Build Changelog
+        id: changelog
+        uses: Bullrich/generate-release-changelog@master
+        env:
+          REPO: ${{ github.repository }}
+
+      - name: Create the release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "${{ steps.vars.outputs.sha_short }}"
+          release_name: "${{ steps.vars.outputs.sha_short }}"
+          body: "${{steps.changelog.outputs.changelog}}"
+          draft: false
+          prerelease: false
+
+      - name: Upload rusty-tractive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tractive"
+          asset_name: "rusty-tractive.arm-unknown-linux-gnueabihf"
+          asset_content_type: "application/octet-stream"
+
+      - name: Upload rusty-tractive-telegram-bot
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tractive-telegram-bot"
+          asset_name: "Upload rusty-tractive-telegram-bot.arm-unknown-linux-gnueabihf"
+          asset_content_type: "application/octet-stream"
+
+      - name: Upload rusty-tado
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tado"
+          asset_name: "rusty-tado.arm-unknown-linux-gnueabihf"
+          asset_content_type: "application/octet-stream"
