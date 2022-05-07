@@ -25,12 +25,11 @@ async fn main() {
 async fn run(opts: Opts) -> Result<()> {
     let redis = rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name).await?;
 
-    let microservice = Service::new(
+    let service = Service::new(
         Api::new()?,
         redis,
         opts.heartbeat.get_heartbeat()?,
-        opts.email.to_lowercase(),
-        opts.password,
+        opts.service,
     );
-    microservice.run().await
+    service.run().await
 }

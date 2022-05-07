@@ -13,6 +13,12 @@ pub struct Opts {
     #[clap(flatten)]
     pub heartbeat: heartbeat::Opts,
 
+    #[clap(flatten)]
+    pub service: ServiceOpts,
+}
+
+#[derive(Parser)]
+pub struct ServiceOpts {
     /// Tractive account email
     #[clap(long, env = "RUSTY_TRACTIVE_EMAIL")]
     pub email: String,

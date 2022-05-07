@@ -7,30 +7,23 @@ use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::ignore_unknown_error;
 use tracing::{debug, error, info, instrument};
 
+use crate::opts::ServiceOpts;
 use crate::{models, Api};
 
 pub struct Service {
     api: Api,
     redis: RedisClient,
     heartbeat: Heartbeat,
-    email: String,
-    password: String,
+    opts: ServiceOpts,
 }
 
 impl Service {
-    pub fn new(
-        api: Api,
-        redis: RedisClient,
-        heartbeat: Heartbeat,
-        email: String,
-        password: String,
-    ) -> Self {
+    pub fn new(api: Api, redis: RedisClient, heartbeat: Heartbeat, opts: ServiceOpts) -> Self {
         Self {
             api,
             redis,
             heartbeat,
-            email,
-            password,
+            opts,
         }
     }
 
@@ -56,9 +49,9 @@ impl Service {
             .await
     }
 
-    #[tracing::instrument(level = "debug", skip_all, fields(self.email = self.email.as_str()))]
+    #[tracing::instrument(level = "debug", skip_all, fields(self.email = self.opts.email.as_str()))]
     async fn get_authentication(&self) -> Result<(String, String)> {
-        let key = format!("rusty:tractive:{}:authentication", self.email);
+        let key = format!("rusty:tractive:{}:authentication", self.opts.email);
         let authentication: HashMap<String, String> = self.redis.hgetall(&key).await?;
         let result = match (
             authentication.get("user_id"),
@@ -69,7 +62,10 @@ impl Service {
                 (user_id.clone(), access_token.clone())
             }
             _ => {
-                let token = self.api.authenticate(&self.email, &self.password).await?;
+                let token = self
+                    .api
+                    .authenticate(&self.opts.email, &self.opts.password)
+                    .await?;
                 self.store_access_token(&key, &token).await?;
                 (token.user_id, token.access_token)
             }
