@@ -81,7 +81,7 @@ jobs:
         with:
           upload_url: "${{ steps.release.outputs.upload_url }}"
           asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tractive-telegram-bot"
-          asset_name: "Upload rusty-tractive-telegram-bot.arm-unknown-linux-gnueabihf"
+          asset_name: "rusty-tractive-telegram-bot.arm-unknown-linux-gnueabihf"
           asset_content_type: "application/octet-stream"
 
       - name: Upload rusty-tado
