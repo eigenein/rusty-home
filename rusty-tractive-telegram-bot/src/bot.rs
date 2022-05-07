@@ -5,7 +5,6 @@ use anyhow::{Context, Result};
 use async_std::task;
 use fred::prelude::*;
 use gethostname::gethostname;
-use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
@@ -14,7 +13,6 @@ use tracing::{debug, error, info, instrument, warn};
 pub struct Bot {
     redis: RedisClient,
     bot_api: BotApi,
-    heartbeat: Heartbeat,
     hostname: String,
 
     /// Redis key that stores the next offset for `getUpdates`.
@@ -27,16 +25,10 @@ impl Bot {
     const GET_UPDATES_TIMEOUT: time::Duration = time::Duration::from_secs(60);
 
     #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id))]
-    pub fn new(
-        redis: RedisClient,
-        bot_api: BotApi,
-        bot_user_id: i64,
-        heartbeat: Heartbeat,
-    ) -> Self {
+    pub fn new(redis: RedisClient, bot_api: BotApi, bot_user_id: i64) -> Self {
         Self {
             redis,
             bot_api,
-            heartbeat,
             hostname: gethostname().into_string().unwrap(),
             offset_key: format!("rusty:telegram:{}:offset", bot_user_id),
             get_updates_key: format!("rusty:telegram:{}:get_updates", bot_user_id),
@@ -121,7 +113,6 @@ impl Bot {
         // Unclaim the time slot should we finish sooner.
         self.redis.del(&self.get_updates_key).await?;
 
-        self.heartbeat.send().await;
         Ok(())
     }
 

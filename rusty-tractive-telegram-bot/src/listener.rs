@@ -6,6 +6,7 @@ use anyhow::{anyhow, Context, Result};
 use fred::prelude::*;
 use fred::types::{XReadResponse, XID};
 use gethostname::gethostname;
+use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
@@ -14,6 +15,7 @@ use tracing::{debug, error, info, instrument};
 pub struct Listener {
     redis: RedisClient,
     bot_api: BotApi,
+    heartbeat: Heartbeat,
 
     /// Target chat to which the updates will be posted.
     chat_id: models::ChatId,
@@ -34,6 +36,7 @@ impl Listener {
     pub async fn new(
         redis: RedisClient,
         bot_api: BotApi,
+        heartbeat: Heartbeat,
         bot_user_id: i64,
         tracker_id: &str,
         chat_id: i64,
@@ -46,6 +49,7 @@ impl Listener {
         let this = Self {
             redis,
             bot_api,
+            heartbeat,
             position_stream_key,
             group_name,
             chat_id: models::ChatId::UniqueId(chat_id),
@@ -63,6 +67,8 @@ impl Listener {
         loop {
             if let Err(error) = self.handle_entries().await {
                 error!("stream listener error: {:#}", error);
+            } else {
+                self.heartbeat.send().await;
             }
         }
     }

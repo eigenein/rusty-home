@@ -4,4 +4,8 @@ Connects Rusty Tractive to Telegram.
 
 ## 💓 Heartbeat
 
-Call heartbeat URL once per [`getUpdates`](https://core.telegram.org/bots/api#getupdates) call. That is at least once a minute.
+The heartbeat is expected every time the tracker position gets updated.
+
+| Expect a heartbeat every | with a grace period of |
+|--------------------------|------------------------|
+| 1 hour                   | 0 seconds              |

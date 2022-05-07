@@ -103,8 +103,6 @@ impl Service {
         };
         if let Err(error) = result {
             error!("failed to handle the message: {:#}", error);
-        } else {
-            self.heartbeat.send().await;
         }
         Ok(())
     }
@@ -133,6 +131,7 @@ impl Service {
         if let Some(position) = payload.position {
             self.on_position_update(&tracker_id, position).await?;
         }
+        self.heartbeat.send().await;
         Ok(())
     }
 

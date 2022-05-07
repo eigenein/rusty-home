@@ -34,17 +34,20 @@ async fn run(opts: Opts) -> Result<()> {
         let redis =
             rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name.clone())
                 .await?;
-        Bot::new(
-            redis,
-            bot_api.clone(),
-            me.id,
-            opts.heartbeat.get_heartbeat()?,
-        )
+        Bot::new(redis, bot_api.clone(), me.id)
     };
     let listener = {
         let redis =
             rusty_shared_redis::connect(&opts.redis.addresses, opts.redis.service_name).await?;
-        Listener::new(redis, bot_api, me.id, &tracker_id, opts.chat_id).await?
+        Listener::new(
+            redis,
+            bot_api,
+            opts.heartbeat.get_heartbeat()?,
+            me.id,
+            &tracker_id,
+            opts.chat_id,
+        )
+        .await?
     };
     try_join(bot.run(), listener.run()).await?;
     Ok(())
