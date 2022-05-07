@@ -53,3 +53,9 @@ jobs:
           SENTRY_PROJECT: "rusty-home"
         with:
           version: ${{ steps.vars.outputs.sha_short }}
+
+      - name: Install Cross
+        run: cargo install --locked --git https://github.com/cross-rs/cross.git
+
+      - name: Build for Raspberry Pi Zero W
+        run: cross build --target arm-unknown-linux-gnueabihf --release
