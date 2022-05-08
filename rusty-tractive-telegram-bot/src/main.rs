@@ -19,7 +19,7 @@ mod opts;
 async fn main() {
     let opts: Opts = Opts::parse();
     let _guard = opts.sentry.init();
-    rusty_shared_tracing::init().unwrap();
+    rusty_shared_tracing::init(env!("CARGO_BIN_NAME")).unwrap();
 
     if let Err(error) = run(opts).await {
         error!("fatal error: {:#}", error);

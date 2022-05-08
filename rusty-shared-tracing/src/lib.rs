@@ -5,7 +5,11 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-pub fn init() -> Result<()> {
+pub fn init(app_name: &str) -> Result<()> {
+    sentry::configure_scope(|scope| {
+        scope.set_tag("app.name", app_name);
+    });
+
     let sentry_layer = sentry::integrations::tracing::layer()
         .event_filter(|metadata| match metadata.level() {
             &Level::ERROR | &Level::WARN => EventFilter::Event,

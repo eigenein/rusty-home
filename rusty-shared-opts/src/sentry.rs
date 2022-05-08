@@ -21,6 +21,7 @@ pub struct Opts {
 }
 
 impl Opts {
+    // TODO: move to `rusty-shared-tracing` and kill the `sentry` dependency.
     pub fn init(&self) -> ClientInitGuard {
         sentry::init((
             self.dsn.clone(),
