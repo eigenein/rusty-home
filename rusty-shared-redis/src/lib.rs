@@ -41,7 +41,7 @@ impl Redis {
     }
 
     #[instrument(skip_all, fields(key = ?key))]
-    pub async fn set_if_greater<K, V>(&self, key: K, value: V) -> Result<(bool, V)>
+    pub async fn set_if_greater<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
     where
         K: Debug + Into<MultipleKeys>,
         V: FromRedis + Unpin + Send,
