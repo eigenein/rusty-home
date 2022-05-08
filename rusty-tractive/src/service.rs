@@ -35,7 +35,7 @@ impl Service {
         self.api
             .get_messages(&user_id, &access_token)
             .await?
-            .try_filter_map(|message| async move { Ok(Some(self.on_message(message).await?)) })
+            .try_filter_map(|message| async move { self.on_message(message).await.map(Some) })
             .try_collect()
             .await
     }
@@ -76,7 +76,7 @@ impl Service {
         transaction
             .expire_at(key, token.expires_at.timestamp())
             .await?;
-        transaction.exec().await?; // FIXME: this may fail.
+        transaction.exec().await?;
         Ok(())
     }
 

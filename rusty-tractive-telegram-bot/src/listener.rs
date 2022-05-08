@@ -70,11 +70,8 @@ impl Listener {
     pub async fn run(self) -> Result<()> {
         info!("running the listener…");
         loop {
-            if let Err(error) = self.handle_entries().await {
-                error!("stream listener error: {:#}", error);
-            } else {
-                self.heartbeat.send().await;
-            }
+            self.handle_entries().await?;
+            self.heartbeat.send().await;
         }
     }
 
