@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use fred::prelude::*;
 use futures::TryStreamExt;
 use rusty_shared_opts::heartbeat::Heartbeat;
-use rusty_shared_redis::{ignore_unknown_error, Redis};
+use rusty_shared_redis::Redis;
 use tracing::{debug, info, instrument};
 
 use crate::opts::ServiceOpts;
@@ -129,7 +129,10 @@ impl Service {
             )
             .await
             .context("failed to update the last hardware timestamp")?;
-        info!(is_timestamp_updated);
+        if !is_timestamp_updated {
+            info!("timestamp is not updated");
+            return Ok(());
+        }
         self.redis
             .client
             .xadd(
@@ -138,14 +141,12 @@ impl Service {
                 None,
                 format!("{}-0", hardware.timestamp.timestamp_millis()),
                 vec![
-                    ("ts", hardware.timestamp.timestamp().to_string()),
-                    ("battery", hardware.battery_level.to_string()),
+                    ("ts", RedisValue::from(hardware.timestamp.timestamp())),
+                    ("battery", RedisValue::from(hardware.battery_level)),
                 ],
             )
             .await
-            .or_else(ignore_unknown_error)
-            .context("failed to push the hardware stream entry")?;
-        Ok(())
+            .context("failed to push the hardware stream entry")
     }
 
     #[instrument(level = "info", skip_all)]
@@ -160,13 +161,13 @@ impl Service {
             "🎯",
         );
         let mut fields = vec![
-            ("ts", position.timestamp.timestamp().to_string()),
-            ("lat", latitude.to_string()),
-            ("lon", longitude.to_string()),
-            ("accuracy", position.accuracy.to_string()),
+            ("ts", RedisValue::from(position.timestamp.timestamp())),
+            ("lat", RedisValue::from(latitude)),
+            ("lon", RedisValue::from(longitude)),
+            ("accuracy", RedisValue::from(position.accuracy)),
         ];
         if let Some(course) = position.course {
-            fields.push(("course", course.to_string()));
+            fields.push(("course", RedisValue::from(course)));
         }
         let (is_timestamp_updated, _) = self
             .redis
@@ -176,7 +177,10 @@ impl Service {
             )
             .await
             .context("failed to update the last position timestamp")?;
-        info!(is_timestamp_updated);
+        if !is_timestamp_updated {
+            info!("timestamp is not updated");
+            return Ok(());
+        }
         self.redis
             .client
             .xadd(
@@ -187,8 +191,6 @@ impl Service {
                 fields,
             )
             .await
-            .or_else(ignore_unknown_error)
-            .context("failed to push the position stream entry")?;
-        Ok(())
+            .context("failed to push the position stream entry")
     }
 }

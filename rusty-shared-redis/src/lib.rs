@@ -55,18 +55,6 @@ impl Redis {
     }
 }
 
-/// Replaces an unknown error with [`Result::Ok`].
-///
-/// This is needed, for example, to safely insert duplicate entries into a stream.
-pub fn ignore_unknown_error(error: RedisError) -> Result<(), RedisError> {
-    if error.kind() == &RedisErrorKind::Unknown {
-        debug!("ignoring error: {:#}", error);
-        Ok(())
-    } else {
-        Err(error)
-    }
-}
-
 #[instrument(skip_all, fields(key = key, group_name = group_name))]
 pub async fn create_consumer_group(
     redis: &RedisClient,
