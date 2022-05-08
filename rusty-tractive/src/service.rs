@@ -121,6 +121,15 @@ impl Service {
     #[instrument(level = "info", skip_all)]
     async fn on_hardware_update(&self, tracker_id: &str, hardware: models::Hardware) -> Result<()> {
         info!(timestamp = ?hardware.timestamp, battery_level = hardware.battery_level, "⌚️");
+        let (is_timestamp_updated, _) = self
+            .redis
+            .set_if_greater(
+                format!("rusty:tractive:{}:hardware:last_timestamp", tracker_id),
+                hardware.timestamp.timestamp(),
+            )
+            .await
+            .context("failed to update the last hardware timestamp")?;
+        info!(is_timestamp_updated);
         self.redis
             .client
             .xadd(
@@ -135,7 +144,8 @@ impl Service {
             )
             .await
             .or_else(ignore_unknown_error)
-            .context("failed to push the hardware stream entry")
+            .context("failed to push the hardware stream entry")?;
+        Ok(())
     }
 
     #[instrument(level = "info", skip_all)]
@@ -158,7 +168,7 @@ impl Service {
         if let Some(course) = position.course {
             fields.push(("course", course.to_string()));
         }
-        let (is_position_timestamp_updated, _) = self
+        let (is_timestamp_updated, _) = self
             .redis
             .set_if_greater(
                 format!("rusty:tractive:{}:position:last_timestamp", tracker_id),
@@ -166,7 +176,7 @@ impl Service {
             )
             .await
             .context("failed to update the last position timestamp")?;
-        info!(is_position_timestamp_updated);
+        info!(is_timestamp_updated);
         self.redis
             .client
             .xadd(
