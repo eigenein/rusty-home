@@ -29,20 +29,13 @@ async fn main() {
 async fn run(opts: Opts) -> Result<()> {
     let bot_api = BotApi::new(opts.bot_token, std::time::Duration::from_secs(5))?;
     let me = methods::GetMe.call(&bot_api).await?;
+    let redis =
+        rusty_shared_redis::Redis::connect(&opts.redis.addresses, opts.redis.service_name.clone())
+            .await?;
 
     let tracker_id = opts.tracker_id.to_lowercase();
-    let bot = {
-        let redis = rusty_shared_redis::Redis::connect(
-            &opts.redis.addresses,
-            opts.redis.service_name.clone(),
-        )
-        .await?;
-        Bot::new(redis, bot_api.clone(), me.id)
-    };
+    let bot = { Bot::new(redis.clone().await?, bot_api.clone(), me.id) };
     let listener = {
-        let redis =
-            rusty_shared_redis::Redis::connect(&opts.redis.addresses, opts.redis.service_name)
-                .await?;
         Listener::new(
             redis,
             bot_api,

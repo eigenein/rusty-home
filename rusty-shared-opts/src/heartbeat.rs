@@ -30,7 +30,7 @@ impl Heartbeat {
         Self { endpoint }
     }
 
-    #[instrument(level = "debug", skip_all)]
+    #[instrument(skip_all)]
     pub async fn send(&self) {
         match &self.endpoint {
             Some((client, url)) => {
