@@ -27,22 +27,11 @@ impl Service {
         }
     }
 
-    pub async fn run(self) -> ! {
-        // TODO: remove the loop.
-        loop {
-            if let Err(error) = self.loop_().await {
-                error!("{:#}", error);
-            }
-        }
-    }
-
-    async fn loop_(&self) -> Result<()> {
-        let (user_id, access_token) = match self.get_authentication().await {
-            Ok(access_token) => access_token,
-            // TODO: replace `panic!` with an error.
-            Err(error) => panic!("failed to obtain the access token: {:#}", error),
-        };
-
+    pub async fn run(&self) -> Result<()> {
+        let (user_id, access_token) = self
+            .get_authentication()
+            .await
+            .context("failed to authenticate")?;
         self.api
             .get_messages(&user_id, &access_token)
             .await?
@@ -51,7 +40,7 @@ impl Service {
             .await
     }
 
-    #[tracing::instrument(level = "debug", skip_all, fields(self.email = self.opts.email.as_str()))]
+    #[tracing::instrument(level = "info", skip_all, fields(self.email = ?self.opts.email))]
     async fn get_authentication(&self) -> Result<(String, String)> {
         let key = format!("rusty:tractive:{}:authentication", self.opts.email);
         let authentication: HashMap<String, String> = self.redis.client.hgetall(&key).await?;
