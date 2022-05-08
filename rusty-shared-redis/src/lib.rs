@@ -1,12 +1,19 @@
+use std::fmt::Debug;
 use std::net::SocketAddr;
 
 use anyhow::{bail, Context, Result};
 use fred::prelude::*;
-use fred::types::XID;
+use fred::types::{MultipleKeys, MultipleValues, XID};
 use tracing::{debug, info, instrument};
 
 pub struct Redis {
     pub client: RedisClient,
+    script_hashes: ScriptHashes,
+}
+
+#[derive(Debug)]
+struct ScriptHashes {
+    set_if_greater: String,
 }
 
 impl Redis {
@@ -20,9 +27,26 @@ impl Redis {
             .await
             .context("failed to connect to Redis")?;
         debug!("connected to Redis");
-        Self::load_scripts(&client).await?;
-        let this = Self { client };
+        let script_hashes = Self::load_scripts(&client).await?;
+        let this = Self {
+            client,
+            script_hashes,
+        };
         Ok(this)
+    }
+
+    #[instrument(level = "debug", skip_all, fields(key = ?key))]
+    pub async fn set_if_greater<K, V>(&self, key: K, value: V) -> Result<(bool, V)>
+    where
+        K: Debug + Into<MultipleKeys>,
+        V: FromRedis + Unpin + Send,
+        V: 'static + TryInto<MultipleValues>,
+        V::Error: Into<RedisError>,
+    {
+        self.client
+            .evalsha(&self.script_hashes.set_if_greater, key, value)
+            .await
+            .context("script failed")
     }
 
     fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<RedisConfig> {
@@ -55,23 +79,12 @@ impl Redis {
         Ok(config)
     }
 
-    #[instrument(level = "debug", skip_all)]
-    async fn load_scripts(client: &RedisClient) -> Result<()> {
-        let set_if_greater_sha = client
-            .script_load(
-                // language=lua
-                r#"
-                local new_value = tonumber(ARGV[1]);
-                local current_value = redis.call('GET', KEYS[1]);
-                if current_value == false or tonumber(current_value) < new_value
-                then
-                    return true
-                end"#,
-            )
-            .await
-            .context("failed to load the script «set if greater»")?;
-        debug!(set_if_greater_sha = ?set_if_greater_sha);
-        Ok(())
+    #[instrument(level = "info", skip_all)]
+    async fn load_scripts(client: &RedisClient) -> Result<ScriptHashes> {
+        let set_if_greater = client.script_load(SET_IF_GREATER_SCRIPT).await?;
+        let hashes = ScriptHashes { set_if_greater };
+        info!(hashes = ?hashes, "loaded the scripts");
+        Ok(hashes)
     }
 }
 
@@ -104,3 +117,16 @@ pub async fn create_consumer_group(
             }
         })
 }
+
+// language=lua
+const SET_IF_GREATER_SCRIPT: &str = r#"
+    local new_value = tonumber(ARGV[1]);
+    local last_value = redis.call("GET", KEYS[1]);
+
+    if last_value == false or tonumber(last_value) < new_value then
+        redis.call("SET", KEYS[1], new_value);
+        return {1, last_value}
+    else
+        return {0, last_value}
+    end
+"#;

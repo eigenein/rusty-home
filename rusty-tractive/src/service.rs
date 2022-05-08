@@ -5,7 +5,7 @@ use fred::prelude::*;
 use futures::TryStreamExt;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::{ignore_unknown_error, Redis};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, info, instrument};
 
 use crate::opts::ServiceOpts;
 use crate::{models, Api};
@@ -82,16 +82,12 @@ impl Service {
 
     #[instrument(level = "debug", skip_all)]
     async fn on_message(&self, message: models::Message) -> Result<()> {
-        let result = match message {
+        match message {
             models::Message::Handshake(payload) => self.on_handshake(payload).await,
             models::Message::KeepAlive(payload) => self.on_keep_alive(payload).await,
             models::Message::TrackerStatus(payload) => self.on_tracker_status(payload).await,
             _ => Ok(()),
-        };
-        if let Err(error) = result {
-            error!("failed to handle the message: {:#}", error);
         }
-        Ok(())
     }
 
     #[instrument(level = "info", skip_all)]
@@ -147,8 +143,8 @@ impl Service {
         let (latitude, longitude) = position.latlong;
         info!(
             timestamp = ?position.timestamp,
-            latitude = latitude,
-            longitude = longitude,
+            latitude,
+            longitude,
             accuracy = position.accuracy,
             course = position.course,
             "🎯",
@@ -162,6 +158,15 @@ impl Service {
         if let Some(course) = position.course {
             fields.push(("course", course.to_string()));
         }
+        let (is_position_timestamp_updated, _) = self
+            .redis
+            .set_if_greater(
+                format!("rusty:tractive:{}:position:last_timestamp", tracker_id),
+                position.timestamp.timestamp(),
+            )
+            .await
+            .context("failed to update the last position timestamp")?;
+        info!(is_position_timestamp_updated);
         self.redis
             .client
             .xadd(
@@ -173,6 +178,7 @@ impl Service {
             )
             .await
             .or_else(ignore_unknown_error)
-            .context("failed to push the position stream entry")
+            .context("failed to push the position stream entry")?;
+        Ok(())
     }
 }
