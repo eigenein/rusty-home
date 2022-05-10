@@ -23,19 +23,27 @@ pub fn init(app_name: &str, enable_journald: bool) -> Result<()> {
                 &Level::ERROR | &Level::WARN | &Level::INFO | &Level::DEBUG
             )
         });
+
+    let format_filter =
+        EnvFilter::try_from_env("RUSTY_HOME_LOG").or_else(|_| EnvFilter::try_new("info"))?;
     let format_layer = tracing_subscriber::fmt::layer()
         .without_time()
-        .with_filter(EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?);
+        .with_filter(format_filter);
 
-    let registry = tracing_subscriber::Registry::default()
+    tracing_subscriber::Registry::default()
         .with(sentry_layer)
-        .with(format_layer);
-    if enable_journald {
-        let journald_layer = tracing_journald::layer()?.with_field_prefix(None);
-        registry.with(journald_layer).init();
-    } else {
-        registry.init();
-    };
+        .with(format_layer)
+        .with(if enable_journald {
+            let filter = EnvFilter::try_from_env("RUSTY_HOME_JOURNALD")
+                .or_else(|_| EnvFilter::try_new("info"))?;
+            let layer = tracing_journald::layer()?
+                .with_field_prefix(None)
+                .with_filter(filter);
+            Some(layer)
+        } else {
+            None
+        })
+        .init();
 
     Ok(())
 }
