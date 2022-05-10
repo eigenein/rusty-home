@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use anyhow::{bail, Context, Result};
 use fred::prelude::*;
-use fred::types::{MultipleKeys, MultipleValues, XID};
+use fred::types::{MultipleKeys, MultipleValues, RedisKey, XID};
 use tracing::{debug, info, instrument};
 
 pub struct Redis {
@@ -40,10 +40,10 @@ impl Redis {
         Ok(this)
     }
 
-    #[instrument(skip_all, fields(key = key, group_name = group_name))]
-    pub async fn create_consumer_group(
+    #[instrument(skip_all, fields(key = ?key, group_name = group_name))]
+    pub async fn create_consumer_group<K: Into<RedisKey> + Debug>(
         &self,
-        key: &str,
+        key: K,
         group_name: &str,
     ) -> Result<(), RedisError> {
         self.client

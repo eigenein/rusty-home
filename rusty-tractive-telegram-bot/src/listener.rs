@@ -4,7 +4,7 @@ use std::time;
 
 use anyhow::{anyhow, Context, Result};
 use fred::prelude::*;
-use fred::types::{XReadResponse, XID};
+use fred::types::{RedisKey, XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::Redis;
@@ -27,10 +27,10 @@ pub struct Listener {
     group_name: String,
 
     /// Tractive position stream.
-    position_stream_key: String,
+    position_stream_key: RedisKey,
 
     /// Tractive hardware position stream.
-    hardware_stream_key: String,
+    hardware_stream_key: RedisKey,
 
     /// Stores the pinned message IDs, so that we can unpin them later.
     pinned_message_ids_key: String,
@@ -52,12 +52,12 @@ impl Listener {
     ) -> Result<Self> {
         let group_name = format!("rusty:telegram:{}", bot_user_id);
 
-        let position_stream_key = format!("rusty:tractive:{}:position", tracker_id);
+        let position_stream_key = RedisKey::from(format!("rusty:tractive:{}:position", tracker_id));
         redis
             .create_consumer_group(&position_stream_key, &group_name)
             .await?;
 
-        let hardware_stream_key = format!("rusty:tractive:{}:hardware", tracker_id);
+        let hardware_stream_key = RedisKey::from(format!("rusty:tractive:{}:hardware", tracker_id));
         redis
             .create_consumer_group(&hardware_stream_key, &group_name)
             .await?;
@@ -92,7 +92,8 @@ impl Listener {
     }
 
     async fn handle_entries(&self) -> Result<()> {
-        let response: XReadResponse<String, String, String, String> = self
+        #[allow(clippy::mutable_key_type)]
+        let response: XReadResponse<RedisKey, String, String, String> = self
             .redis
             .client
             .xreadgroup_map(
@@ -101,12 +102,13 @@ impl Listener {
                 None,
                 Some(0),
                 true,
-                &self.position_stream_key,
+                vec![&self.position_stream_key, &self.hardware_stream_key],
                 XID::NewInGroup,
             )
             .await?;
 
         for (stream_id, entries) in response {
+            info!(?stream_id, n_entries = entries.len());
             if stream_id == self.position_stream_key {
                 for (entry_id, entry) in entries {
                     self.on_position_entry(&entry_id, entry).await?;
@@ -117,7 +119,7 @@ impl Listener {
         Ok(())
     }
 
-    #[instrument(level = "info", skip_all, fields(entry_id = entry_id))]
+    #[instrument(skip_all, fields(entry_id = entry_id))]
     async fn on_position_entry(
         &self,
         entry_id: &str,
@@ -199,7 +201,7 @@ impl Listener {
         Ok(())
     }
 
-    #[instrument(level = "info", skip_all)]
+    #[instrument(skip_all)]
     async fn delete_old_messages(&self) -> Result<()> {
         while let Some(message_id) = self
             .redis
