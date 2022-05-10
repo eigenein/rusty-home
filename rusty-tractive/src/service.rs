@@ -120,7 +120,7 @@ impl Service {
 
     #[instrument(level = "info", skip_all)]
     async fn on_hardware_update(&self, tracker_id: &str, hardware: models::Hardware) -> Result<()> {
-        info!(timestamp = ?hardware.timestamp, battery_level = hardware.battery_level, "⌚️");
+        info!(timestamp = ?hardware.timestamp, battery_level = hardware.battery_level, "⌚ hardware update️");
         let (is_timestamp_updated, _) = self
             .redis
             .set_if_greater(
@@ -158,7 +158,7 @@ impl Service {
             longitude,
             accuracy = position.accuracy,
             course = position.course,
-            "🎯",
+            "🎯 position update",
         );
         let mut fields = vec![
             ("ts", RedisValue::from(position.timestamp.timestamp())),

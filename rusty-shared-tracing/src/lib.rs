@@ -5,10 +5,9 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-// FIXME: remove `app_name`, figure it out automatically.
-pub fn init(app_name: &str, enable_journald: bool) -> Result<()> {
+pub fn init(enable_journald: bool) -> Result<()> {
     sentry::configure_scope(|scope| {
-        scope.set_tag("app.name", app_name);
+        scope.set_tag("app.name", env!("CARGO_CRATE_NAME"));
     });
 
     let sentry_layer = sentry::integrations::tracing::layer()
@@ -38,6 +37,7 @@ pub fn init(app_name: &str, enable_journald: bool) -> Result<()> {
                 .or_else(|_| EnvFilter::try_new("info"))?;
             let layer = tracing_journald::layer()?
                 .with_field_prefix(None)
+                .with_syslog_identifier(env!("CARGO_CRATE_NAME").to_string())
                 .with_filter(filter);
             Some(layer)
         } else {

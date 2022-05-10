@@ -3,7 +3,7 @@ use tracing::info;
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    rusty_shared_tracing::init(env!("CARGO_BIN_NAME"), false)?; // TODO
+    rusty_shared_tracing::init(false)?; // TODO
     info!("hello");
     Ok(())
 }
