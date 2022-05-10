@@ -1,8 +1,8 @@
-use clap::{crate_version, Parser};
+use clap::Parser;
 use rusty_shared_opts::{heartbeat, redis, sentry};
 
 #[derive(Parser)]
-#[clap(author, version = concat!(crate_version!(), "-", env!("VERGEN_GIT_SHA_SHORT")), about)]
+#[clap(author, version, about)]
 pub struct Opts {
     #[clap(flatten)]
     pub redis: redis::Opts,

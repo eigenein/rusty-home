@@ -6,7 +6,7 @@ use tracing::instrument;
 
 const USER_AGENT: &str = concat!(
     "rusty-shared-telegram/",
-    env!("VERGEN_GIT_SHA_SHORT"),
+    env!("CARGO_PKG_VERSION"),
     " (Rust; https://github.com/eigenein/rusty-home)"
 );
 

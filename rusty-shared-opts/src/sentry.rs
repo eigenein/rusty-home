@@ -3,8 +3,6 @@ use std::borrow::Cow;
 use clap::Parser;
 use sentry::{ClientInitGuard, ClientOptions};
 
-use crate::git;
-
 #[derive(Parser)]
 pub struct Opts {
     /// Sentry SDN
@@ -26,7 +24,7 @@ impl Opts {
         sentry::init((
             self.dsn.clone(),
             ClientOptions {
-                release: Some(Cow::Borrowed(git::COMMIT_SHA_SHORT)),
+                release: Some(Cow::Borrowed(env!("CARGO_PKG_VERSION"))),
                 traces_sample_rate: self.traces_sample_rate,
                 ..Default::default()
             },

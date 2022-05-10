@@ -11,7 +11,7 @@ use crate::models::{Message, Token};
 
 const USER_AGENT: &str = concat!(
     "rusty-tractive/",
-    env!("VERGEN_GIT_SHA_SHORT"),
+    env!("CARGO_PKG_VERSION"),
     " (Rust; https://github.com/eigenein/rusty-home)"
 );
 
