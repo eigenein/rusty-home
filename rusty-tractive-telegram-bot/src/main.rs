@@ -14,7 +14,6 @@ mod bot;
 mod listener;
 mod opts;
 
-// TODO: extract to a shared package.
 #[async_std::main]
 async fn main() {
     let opts: Opts = Opts::parse();

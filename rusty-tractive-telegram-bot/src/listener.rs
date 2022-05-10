@@ -11,7 +11,7 @@ use rusty_shared_redis::Redis;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, info, instrument};
 
 pub struct Listener {
     redis: Redis,
@@ -26,8 +26,16 @@ pub struct Listener {
     /// Redis stream consumer group name.
     group_name: String,
 
+    /// Tractive position stream.
     position_stream_key: String,
+
+    /// Tractive hardware position stream.
+    hardware_stream_key: String,
+
+    /// Stores the pinned message IDs, so that we can unpin them later.
     pinned_message_ids_key: String,
+
+    /// Live location message ID, so that we can update it at any time.
     live_location_message_id_key: String,
 }
 
@@ -42,9 +50,16 @@ impl Listener {
         tracker_id: &str,
         chat_id: i64,
     ) -> Result<Self> {
-        let position_stream_key = format!("rusty:tractive:{}:position", tracker_id);
         let group_name = format!("rusty:telegram:{}", bot_user_id);
-        rusty_shared_redis::create_consumer_group(&redis.client, &position_stream_key, &group_name)
+
+        let position_stream_key = format!("rusty:tractive:{}:position", tracker_id);
+        redis
+            .create_consumer_group(&position_stream_key, &group_name)
+            .await?;
+
+        let hardware_stream_key = format!("rusty:tractive:{}:hardware", tracker_id);
+        redis
+            .create_consumer_group(&hardware_stream_key, &group_name)
             .await?;
 
         let this = Self {
@@ -52,6 +67,7 @@ impl Listener {
             bot_api,
             heartbeat,
             position_stream_key,
+            hardware_stream_key,
             group_name,
             chat_id: models::ChatId::UniqueId(chat_id),
             consumer_name: gethostname().into_string().unwrap(),
@@ -93,21 +109,11 @@ impl Listener {
         for (stream_id, entries) in response {
             if stream_id == self.position_stream_key {
                 for (entry_id, entry) in entries {
-                    if let Err(error) = self.on_position_entry(&entry_id, entry).await {
-                        error!(
-                            entry_id = entry_id.as_str(),
-                            "failed to handle the stream entry: {:#}", error,
-                        );
-                    } else {
-                        // TODO: `noack` is set to `true`, thus this is not needed.
-                        self.redis
-                            .client
-                            .xack(&stream_id, &self.group_name, entry_id)
-                            .await?;
-                    }
+                    self.on_position_entry(&entry_id, entry).await?;
                 }
             }
         }
+
         Ok(())
     }
 

@@ -40,6 +40,24 @@ impl Redis {
         Ok(this)
     }
 
+    #[instrument(skip_all, fields(key = key, group_name = group_name))]
+    pub async fn create_consumer_group(
+        &self,
+        key: &str,
+        group_name: &str,
+    ) -> Result<(), RedisError> {
+        self.client
+            .xgroup_create(key, group_name, XID::Max, true)
+            .await
+            .or_else(|error| {
+                if error.details().starts_with("BUSYGROUP") {
+                    Ok(())
+                } else {
+                    Err(error)
+                }
+            })
+    }
+
     #[instrument(skip_all, fields(key = ?key))]
     pub async fn set_if_greater<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
     where
@@ -53,24 +71,6 @@ impl Redis {
             .await
             .context("script failed")
     }
-}
-
-#[instrument(skip_all, fields(key = key, group_name = group_name))]
-pub async fn create_consumer_group(
-    redis: &RedisClient,
-    key: &str,
-    group_name: &str,
-) -> Result<(), RedisError> {
-    redis
-        .xgroup_create(key, group_name, XID::Max, true)
-        .await
-        .or_else(|error| {
-            if error.details().starts_with("BUSYGROUP") {
-                Ok(())
-            } else {
-                Err(error)
-            }
-        })
 }
 
 fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<RedisConfig> {
