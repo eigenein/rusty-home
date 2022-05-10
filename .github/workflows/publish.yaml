@@ -25,9 +25,6 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v1
-
       - name: Install Cross
         run: cargo install --locked --git https://github.com/cross-rs/cross.git
 
