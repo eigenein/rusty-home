@@ -1,6 +1,6 @@
 [package]
 name = "rusty-shared-opts"
-version = "3.0.2"
+version = "0.0.0"
 edition = "2021"
 build = "build.rs"
 

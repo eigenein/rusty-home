@@ -1,0 +1,88 @@
+name: Publish
+
+on:
+  release:
+    types: ["published"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set versions
+        run: |
+          echo 'version = "${{ github.ref_name }}"'
+          sed -i -e 's/version = "0.0.0"/version = "${{ github.ref_name }}"/g' */Cargo.toml
+          sed -i -e 's/version = "0.0.0"/version = "${{ github.ref_name }}"/g' Cargo.lock
+
+      - name: Rustup
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1
+
+      - name: Install Cross
+        run: cargo install --locked --git https://github.com/cross-rs/cross.git
+
+      - name: Build for Raspberry Pi Zero W
+        run: cross build --target arm-unknown-linux-gnueabihf --release
+
+      - name: Build Changelog
+        id: changelog
+        uses: Bullrich/generate-release-changelog@master
+        env:
+          REPO: ${{ github.repository }}
+
+      - name: Upload rusty-tractive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tractive"
+          asset_name: "rusty-tractive.arm-unknown-linux-gnueabihf"
+          asset_content_type: "application/octet-stream"
+
+      - name: Upload rusty-tractive-telegram-bot
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tractive-telegram-bot"
+          asset_name: "rusty-tractive-telegram-bot.arm-unknown-linux-gnueabihf"
+          asset_content_type: "application/octet-stream"
+
+      - name: Upload rusty-tado
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "target/arm-unknown-linux-gnueabihf/release/rusty-tado"
+          asset_name: "rusty-tado.arm-unknown-linux-gnueabihf"
+          asset_content_type: "application/octet-stream"
+
+      - name: Update release
+        uses: tubone24/update_release@v1.3.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: false
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: "eigenein"
+          SENTRY_PROJECT: "rusty-home"
+        with:
+          version: ${{ github.ref_name }}
