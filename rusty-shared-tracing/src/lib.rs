@@ -5,7 +5,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-pub fn init(app_name: &str) -> Result<()> {
+// FIXME: remove `app_name`, figure it out automatically.
+pub fn init(app_name: &str, enable_journald: bool) -> Result<()> {
     sentry::configure_scope(|scope| {
         scope.set_tag("app.name", app_name);
     });
@@ -26,9 +27,15 @@ pub fn init(app_name: &str) -> Result<()> {
         .without_time()
         .with_filter(EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?);
 
-    tracing_subscriber::Registry::default()
+    let registry = tracing_subscriber::Registry::default()
         .with(sentry_layer)
-        .with(format_layer)
-        .init();
+        .with(format_layer);
+    if enable_journald {
+        let journald_layer = tracing_journald::layer()?.with_field_prefix(None);
+        registry.with(journald_layer).init();
+    } else {
+        registry.init();
+    };
+
     Ok(())
 }
