@@ -103,7 +103,7 @@ impl Listener {
                 Some(0),
                 true,
                 vec![&self.position_stream_key, &self.hardware_stream_key],
-                XID::NewInGroup,
+                vec![XID::NewInGroup, XID::NewInGroup],
             )
             .await?;
 
