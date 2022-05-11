@@ -146,7 +146,7 @@ impl Bot {
             models::UpdatePayload::Message(message) => match message.text {
                 Some(text) if text.starts_with("/start") => {
                     methods::SendMessage::new(
-                        message.chat.id.into(),
+                        message.chat.id,
                         format!(r#"👋 Your chat ID is `{}`\."#, message.chat.id),
                     )
                     .parse_mode(models::ParseMode::MarkdownV2)

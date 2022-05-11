@@ -1,42 +1,49 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::time;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use fred::prelude::*;
 use fred::types::{RedisKey, XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
-use rusty_shared_redis::Redis;
+use rusty_shared_redis::{get_parsed, Redis};
 use rusty_shared_telegram::api::BotApi;
-use rusty_shared_telegram::methods::Method;
-use rusty_shared_telegram::{methods, models};
-use tracing::{debug, info, instrument};
+use rusty_shared_telegram::{methods::*, models::*};
+use tracing::{debug, error, info, instrument};
+
+use crate::opts::BatteryOpts;
 
 pub struct Listener {
     redis: Redis,
     bot_api: BotApi,
     heartbeat: Heartbeat,
+    battery_opts: BatteryOpts,
 
     /// Target chat to which the updates will be posted.
-    chat_id: models::ChatId,
+    chat_id: ChatId,
 
     consumer_name: String,
 
     /// Redis stream consumer group name.
     group_name: String,
 
+    keys: RedisKeys,
+}
+
+struct RedisKeys {
     /// Tractive position stream.
-    position_stream_key: RedisKey,
+    position_stream: RedisKey,
 
     /// Tractive hardware position stream.
-    hardware_stream_key: RedisKey,
+    hardware_stream: RedisKey,
 
     /// Stores the pinned message IDs, so that we can unpin them later.
-    pinned_message_ids_key: String,
+    pinned_message_ids: RedisKey,
 
     /// Live location message ID, so that we can update it at any time.
-    live_location_message_id_key: String,
+    live_location_message_id: RedisKey,
+
+    last_known_battery_level: RedisKey,
 }
 
 impl Listener {
@@ -49,6 +56,7 @@ impl Listener {
         bot_user_id: i64,
         tracker_id: &str,
         chat_id: i64,
+        battery_opts: BatteryOpts,
     ) -> Result<Self> {
         let group_name = format!("rusty:telegram:{}", bot_user_id);
 
@@ -66,19 +74,26 @@ impl Listener {
             redis,
             bot_api,
             heartbeat,
-            position_stream_key,
-            hardware_stream_key,
             group_name,
-            chat_id: models::ChatId::UniqueId(chat_id),
+            chat_id: ChatId::UniqueId(chat_id),
             consumer_name: gethostname().into_string().unwrap(),
-            live_location_message_id_key: format!(
-                "rusty:tractive:{}:telegram:{}:live_location_message_id",
-                tracker_id, bot_user_id,
-            ),
-            pinned_message_ids_key: format!(
-                "rusty:tractive:{}:telegram:{}:pinned_message_ids",
-                tracker_id, bot_user_id,
-            ),
+            battery_opts,
+            keys: RedisKeys {
+                position_stream: position_stream_key,
+                hardware_stream: hardware_stream_key,
+                live_location_message_id: RedisKey::from(format!(
+                    "rusty:tractive:{}:telegram:{}:live_location_message_id",
+                    tracker_id, bot_user_id,
+                )),
+                pinned_message_ids: RedisKey::from(format!(
+                    "rusty:tractive:{}:telegram:{}:pinned_message_ids",
+                    tracker_id, bot_user_id,
+                )),
+                last_known_battery_level: RedisKey::from(format!(
+                    "rusty:tractive:{}:telegram:{}:last_known_battery_level",
+                    tracker_id, bot_user_id,
+                )),
+            },
         };
         Ok(this)
     }
@@ -102,16 +117,20 @@ impl Listener {
                 None,
                 Some(0),
                 true,
-                vec![&self.position_stream_key, &self.hardware_stream_key],
+                vec![&self.keys.position_stream, &self.keys.hardware_stream],
                 vec![XID::NewInGroup, XID::NewInGroup],
             )
             .await?;
 
         for (stream_id, entries) in response {
             info!(?stream_id, n_entries = entries.len());
-            if stream_id == self.position_stream_key {
+            if stream_id == self.keys.position_stream {
                 for (entry_id, entry) in entries {
                     self.on_position_entry(&entry_id, entry).await?;
+                }
+            } else if stream_id == self.keys.hardware_stream {
+                for (entry_id, entry) in entries {
+                    self.on_hardware_entry(&entry_id, entry).await?;
                 }
             }
         }
@@ -126,7 +145,7 @@ impl Listener {
         fields: HashMap<String, String>,
     ) -> Result<()> {
         debug!(fields = ?fields);
-        let location = methods::Location::new(
+        let location = Location::new(
             self.chat_id.clone(),
             get_parsed(&fields, "lat")?,
             get_parsed(&fields, "lon")?,
@@ -141,36 +160,38 @@ impl Listener {
             longitude = location.longitude,
             horizontal_accuracy = location.horizontal_accuracy,
             heading = location.heading,
+            "new location entry",
         );
 
         match self
             .redis
             .client
-            .get::<Option<i64>, _>(&self.live_location_message_id_key)
+            .get::<Option<i64>, _>(&self.keys.live_location_message_id)
             .await?
         {
             Some(message_id) => {
-                debug!(message_id = message_id, "editing existing message…");
-                methods::EditMessageLiveLocation::new(self.chat_id.clone(), message_id, location)
-                    .call(&self.bot_api)
-                    .await?;
+                debug!(message_id, "editing existing message…");
+                if let Err(error) =
+                    EditMessageLiveLocation::new(self.chat_id.clone(), message_id, location)
+                        .call(&self.bot_api)
+                        .await
+                {
+                    error!("failed to edit the live location: {:#}", error);
+                }
             }
             None => {
                 info!("sending a new message…");
-                let message_id = methods::SendLocation::new(location)
+                let message_id = SendLocation::new(location)
                     .live_period(Self::LIVE_PERIOD)
                     .call(&self.bot_api)
                     .await?
                     .id;
-                debug!(
-                    message_id = message_id,
-                    "updating the live location message ID…",
-                );
+                debug!(message_id, "updating the live location message ID…");
                 if self
                     .redis
                     .client
                     .set::<Option<()>, _, _>(
-                        &self.live_location_message_id_key,
+                        &self.keys.live_location_message_id,
                         message_id,
                         Some(Expiration::EX(Self::LIVE_PERIOD.as_secs() as i64)),
                         Some(SetOptions::NX),
@@ -179,19 +200,19 @@ impl Listener {
                     .await?
                     .is_some()
                 {
-                    info!(message_id = message_id, "pinning the message…");
-                    methods::PinChatMessage::new(&self.chat_id, message_id)
+                    info!(message_id, "pinning the message…");
+                    PinChatMessage::new(&self.chat_id, message_id)
                         .disable_notification()
                         .call(&self.bot_api)
                         .await?;
                     self.delete_old_messages().await?;
                     self.redis
                         .client
-                        .rpush(&self.pinned_message_ids_key, message_id)
+                        .rpush(&self.keys.pinned_message_ids, message_id)
                         .await?;
                 } else {
-                    info!(message_id = message_id, "too late – deleting the message…");
-                    methods::DeleteMessage::new(&self.chat_id, message_id)
+                    info!(message_id, "too late – deleting the message…");
+                    DeleteMessage::new(&self.chat_id, message_id)
                         .call(&self.bot_api)
                         .await?;
                 }
@@ -206,33 +227,81 @@ impl Listener {
         while let Some(message_id) = self
             .redis
             .client
-            .lpop::<Option<i64>, _>(&self.pinned_message_ids_key, None)
+            .lpop::<Option<i64>, _>(&self.keys.pinned_message_ids, None)
             .await?
         {
-            info!(
-                message_id = message_id,
-                "unpinning and deleting the old message…",
-            );
-            methods::UnpinChatMessage::new(&self.chat_id, message_id)
+            info!(message_id, "unpinning and deleting the old message…");
+            UnpinChatMessage::new(&self.chat_id, message_id)
                 .call(&self.bot_api)
                 .await?;
-            methods::DeleteMessage::new(&self.chat_id, message_id)
+            if let Err(error) = DeleteMessage::new(&self.chat_id, message_id)
                 .call(&self.bot_api)
+                .await
+            {
+                error!("failed to delete the old message: {:#}", error);
+            }
+        }
+        Ok(())
+    }
+
+    #[instrument(skip_all, fields(entry_id = entry_id))]
+    async fn on_hardware_entry(
+        &self,
+        entry_id: &str,
+        fields: HashMap<String, String>,
+    ) -> Result<()> {
+        debug!(fields = ?fields);
+        let battery_level: u8 = get_parsed(&fields, "battery")?;
+        info!(battery_level, "new hardware entry");
+        let (is_updated, last_level) = self
+            .redis
+            .set_if_not_equal(&self.keys.last_known_battery_level, battery_level)
+            .await?;
+        if is_updated {
+            self.on_battery_level_changed(last_level, battery_level)
                 .await?;
         }
         Ok(())
     }
-}
 
-// TODO: move to a shared package.
-fn get_parsed<T>(fields: &HashMap<String, String>, key: &str) -> Result<T>
-where
-    T: FromStr,
-    <T as FromStr>::Err: 'static + std::error::Error + Send + Sync,
-{
-    fields
-        .get(key)
-        .ok_or_else(|| anyhow!("missing `{}`", key))?
-        .parse()
-        .with_context(|| format!("failed to parse `{}`", key))
+    #[instrument(skip_all, fields(current_level, last_level))]
+    async fn on_battery_level_changed(
+        &self,
+        last_level: Option<u8>,
+        current_level: u8,
+    ) -> Result<()> {
+        info!(current_level, last_level, "battery level changed");
+        let last_level = last_level.unwrap_or(current_level);
+
+        if current_level >= self.battery_opts.full_level
+            && last_level < self.battery_opts.full_level
+        {
+            SendMessage::new(
+                &self.chat_id,
+                format!("🔋 *{}%* Battery is now full!", current_level),
+            )
+            .parse_mode(ParseMode::MarkdownV2)
+            .call(&self.bot_api)
+            .await?;
+        } else if current_level <= self.battery_opts.low_level
+            && last_level > self.battery_opts.low_level
+        {
+            SendMessage::new(
+                &self.chat_id,
+                format!("⚡ *{}%* battery level is getting low️", current_level),
+            )
+            .parse_mode(ParseMode::MarkdownV2)
+            .call(&self.bot_api)
+            .await?;
+        } else if current_level <= self.battery_opts.critical_level {
+            SendMessage::new(
+                &self.chat_id,
+                format!("🪫 *{}%* battery level is critical️", current_level),
+            )
+            .parse_mode(ParseMode::MarkdownV2)
+            .call(&self.bot_api)
+            .await?;
+        }
+        Ok(())
+    }
 }

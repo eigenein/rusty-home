@@ -27,4 +27,34 @@ pub struct Opts {
     /// Target chat to which the updates will be posted
     #[clap(long, env = "RUSTY_TRACTIVE_CHAT_ID")]
     pub chat_id: i64,
+
+    #[clap(flatten)]
+    pub battery: BatteryOpts,
+}
+
+#[derive(Parser)]
+pub struct BatteryOpts {
+    /// Minimum battery level which is treated as full
+    #[clap(
+        long = "battery-full-level",
+        env = "RUSTY_TRACTIVE_BATTERY_FULL",
+        default_value = "95"
+    )]
+    pub full_level: u8,
+
+    /// Maximum battery level which is treated as low
+    #[clap(
+        long = "battery-low-level",
+        env = "RUSTY_TRACTIVE_BATTERY_LOW",
+        default_value = "50"
+    )]
+    pub low_level: u8,
+
+    /// Maximum battery level which is treated as critically low
+    #[clap(
+        long = "battery-critical-level",
+        env = "RUSTY_TRACTIVE_BATTERY_CRITICAL",
+        default_value = "15"
+    )]
+    pub critical_level: u8,
 }

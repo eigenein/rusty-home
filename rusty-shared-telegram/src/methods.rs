@@ -134,10 +134,10 @@ impl Method for SendMessage {
 }
 
 impl SendMessage {
-    pub fn new(chat_id: models::ChatId, text: String) -> Self {
+    pub fn new(chat_id: impl Into<models::ChatId>, text: impl Into<String>) -> Self {
         Self {
-            chat_id,
-            text,
+            chat_id: chat_id.into(),
+            text: text.into(),
             parse_mode: None,
             reply_to_message_id: None,
         }

@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::net::SocketAddr;
+use std::str::FromStr;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use fred::prelude::*;
 use fred::types::{MultipleKeys, MultipleValues, RedisKey};
 use tracing::{debug, info, instrument};
@@ -14,6 +16,7 @@ pub struct Redis {
 #[derive(Debug, Clone)]
 struct ScriptHashes {
     set_if_greater: String,
+    set_if_not_equal: String,
     create_consumer_group: String,
 }
 
@@ -66,6 +69,32 @@ impl Redis {
             .await
             .context("script failed")
     }
+
+    #[instrument(skip_all, fields(key = ?key))]
+    pub async fn set_if_not_equal<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
+    where
+        K: Debug + Into<MultipleKeys>,
+        V: FromRedis + Unpin + Send,
+        V: 'static + TryInto<MultipleValues>,
+        V::Error: Into<RedisError>,
+    {
+        self.client
+            .evalsha(&self.script_hashes.set_if_not_equal, key, value)
+            .await
+            .context("script failed")
+    }
+}
+
+pub fn get_parsed<T>(fields: &HashMap<String, String>, key: &str) -> Result<T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: 'static + std::error::Error + Send + Sync,
+{
+    fields
+        .get(key)
+        .ok_or_else(|| anyhow!("missing `{}`", key))?
+        .parse()
+        .with_context(|| format!("failed to parse `{}`", key))
 }
 
 fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<RedisConfig> {
@@ -114,11 +143,15 @@ async fn connect(client: &RedisClient) -> Result<()> {
 async fn load_scripts(client: &RedisClient) -> Result<ScriptHashes> {
     let set_if_greater = client.script_load(SET_IF_GREATER_SCRIPT).await?;
     let create_consumer_group = client.script_load(CREATE_CONSUMER_GROUP).await?;
+    let set_if_not_equal = client.script_load(SET_IF_NOT_EQUAL_SCRIPT).await?;
+
     let hashes = ScriptHashes {
         set_if_greater,
         create_consumer_group,
+        set_if_not_equal,
     };
-    info!(hashes = ?hashes, "loaded the scripts");
+
+    debug!(hashes = ?hashes, "loaded the scripts");
     Ok(hashes)
 }
 
@@ -129,6 +162,19 @@ const SET_IF_GREATER_SCRIPT: &str = r#"
     local last_value = redis.call("GET", KEYS[1]);
 
     if last_value == false or tonumber(last_value) < new_value then
+        redis.call("SET", KEYS[1], new_value);
+        return {1, last_value}
+    else
+        return {0, last_value}
+    end
+"#;
+
+// language=lua
+const SET_IF_NOT_EQUAL_SCRIPT: &str = r#"
+    local new_value = ARGV[1];
+    local last_value = redis.call("GET", KEYS[1]);
+
+    if last_value ~= new_value then
         redis.call("SET", KEYS[1], new_value);
         return {1, last_value}
     else

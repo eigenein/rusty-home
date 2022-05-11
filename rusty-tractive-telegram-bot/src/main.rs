@@ -42,6 +42,7 @@ async fn run(opts: Opts) -> Result<()> {
             me.id,
             &tracker_id,
             opts.chat_id,
+            opts.battery,
         )
         .await?
     };

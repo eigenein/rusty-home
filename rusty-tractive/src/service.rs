@@ -130,7 +130,7 @@ impl Service {
             .await
             .context("failed to update the last hardware timestamp")?;
         if !is_timestamp_updated {
-            info!("timestamp is not updated");
+            info!("⌚ timestamp is not updated");
             return Ok(());
         }
         self.redis
@@ -160,15 +160,6 @@ impl Service {
             course = position.course,
             "🎯 position update",
         );
-        let mut fields = vec![
-            ("ts", RedisValue::from(position.timestamp.timestamp())),
-            ("lat", RedisValue::from(latitude)),
-            ("lon", RedisValue::from(longitude)),
-            ("accuracy", RedisValue::from(position.accuracy)),
-        ];
-        if let Some(course) = position.course {
-            fields.push(("course", RedisValue::from(course)));
-        }
         let (is_timestamp_updated, _) = self
             .redis
             .set_if_greater(
@@ -178,8 +169,17 @@ impl Service {
             .await
             .context("failed to update the last position timestamp")?;
         if !is_timestamp_updated {
-            info!("timestamp is not updated");
+            info!("🎯 timestamp is not updated");
             return Ok(());
+        }
+        let mut fields = vec![
+            ("ts", RedisValue::from(position.timestamp.timestamp())),
+            ("lat", RedisValue::from(latitude)),
+            ("lon", RedisValue::from(longitude)),
+            ("accuracy", RedisValue::from(position.accuracy)),
+        ];
+        if let Some(course) = position.course {
+            fields.push(("course", RedisValue::from(course)));
         }
         self.redis
             .client
