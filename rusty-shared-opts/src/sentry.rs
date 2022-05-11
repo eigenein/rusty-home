@@ -5,11 +5,11 @@ use sentry::{ClientInitGuard, ClientOptions};
 
 #[derive(Parser)]
 pub struct Opts {
-    /// Sentry SDN
+    /// Sentry SDN.
     #[clap(long = "sentry-dsn", env = "RUSTY_HOME_SENTRY_DSN")]
     pub dsn: Option<String>,
 
-    /// Performance monitoring sample rate
+    /// Performance monitoring sample rate.
     #[clap(
         long = "sentry-traces-sample-rate",
         env = "RUSTY_HOME_SENTRY_TRACES_SAMPLE_RATE",

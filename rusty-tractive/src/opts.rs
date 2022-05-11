@@ -22,11 +22,11 @@ pub struct Opts {
 
 #[derive(Parser)]
 pub struct ServiceOpts {
-    /// Tractive account email
+    /// Tractive account email.
     #[clap(long, env = "RUSTY_TRACTIVE_EMAIL")]
     pub email: String,
 
-    /// Tractive account password
+    /// Tractive account password.
     #[clap(long, env = "RUSTY_TRACTIVE_PASSWORD")]
     pub password: String,
 }

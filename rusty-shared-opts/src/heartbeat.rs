@@ -5,7 +5,7 @@ use tracing::{debug, instrument, warn};
 
 #[derive(Parser)]
 pub struct Opts {
-    /// URL to which the microservice should post its heartbeat
+    /// URL to which the microservice should post its heartbeat.
     #[clap(long = "heartbeat-url", env = "RUSTY_HOME_HEARTBEAT_URL")]
     url: Option<String>,
 }

@@ -20,15 +20,15 @@ pub struct Opts {
     #[clap(flatten)]
     pub tracing: rusty_shared_opts::tracing::Opts,
 
-    /// Telegram Bot API token
+    /// Telegram Bot API token.
     #[clap(long, env = "RUSTY_TELEGRAM_BOT_TOKEN")]
     pub bot_token: String,
 
-    /// Tractive tracker ID (case-insensitive)
+    /// Tractive tracker ID (case-insensitive).
     #[clap(long, env = "RUSTY_TRACTIVE_TRACKER_ID")]
     pub tracker_id: String,
 
-    /// Target chat to which the updates will be posted
+    /// Target chat to which the updates will be posted.
     #[clap(long, env = "RUSTY_TRACTIVE_CHAT_ID")]
     pub chat_id: i64,
 
@@ -38,7 +38,7 @@ pub struct Opts {
 
 #[derive(Parser)]
 pub struct BatteryOpts {
-    /// Minimum battery level which is treated as full
+    /// Minimum battery level which is treated as full.
     #[clap(
         long = "battery-full-level",
         env = "RUSTY_TRACTIVE_BATTERY_FULL",
@@ -56,7 +56,7 @@ pub struct BatteryOpts {
     )]
     pub full_message: TemplateArg,
 
-    /// Maximum battery level which is treated as low
+    /// Maximum battery level which is treated as low.
     #[clap(
         long = "battery-low-level",
         env = "RUSTY_TRACTIVE_BATTERY_LOW",
@@ -64,7 +64,7 @@ pub struct BatteryOpts {
     )]
     pub low_level: u8,
 
-    /// Low battery message template
+    /// Low battery message template.
     #[clap(
         long = "battery-low-message",
         env = "RUSTY_TRACTIVE_BATTERY_LOW_MESSAGE",
@@ -73,7 +73,7 @@ pub struct BatteryOpts {
     )]
     pub low_message: TemplateArg,
 
-    /// Maximum battery level which is treated as critically low
+    /// Maximum battery level which is treated as critically low.
     #[clap(
         long = "battery-critical-level",
         env = "RUSTY_TRACTIVE_BATTERY_CRITICAL",
@@ -81,7 +81,7 @@ pub struct BatteryOpts {
     )]
     pub critical_level: u8,
 
-    /// Critically low battery message template
+    /// Critically low battery message template.
     #[clap(
         long = "battery-critical-message",
         env = "RUSTY_TRACTIVE_BATTERY_CRITICAL_MESSAGE",
