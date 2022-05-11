@@ -27,7 +27,7 @@ pub struct Bot {
 impl Bot {
     const GET_UPDATES_TIMEOUT: time::Duration = time::Duration::from_secs(60);
 
-    #[instrument(level = "info", skip_all, fields(bot_user_id = bot_user_id))]
+    #[instrument(skip_all, fields(bot_user_id))]
     pub fn new(redis: Redis, bot_api: BotApi, bot_user_id: i64) -> Self {
         Self {
             redis,
@@ -67,7 +67,7 @@ impl Bot {
     ///
     /// Thus, each instance will have to «claim» its `getUpdates` call before the actual
     /// call would be made.
-    #[instrument(level = "info", skip_all)]
+    #[instrument(skip_all)]
     async fn claim_get_updates(&self) -> Result<bool> {
         let response = self
             .redis
@@ -107,10 +107,7 @@ impl Bot {
             self.set_offset(update.id + 1).await?;
 
             if let Err(error) = self.on_update(update.payload).await {
-                error!(
-                    update.id = update.id,
-                    "failed to handle the update: {:#}", error
-                );
+                error!(update.id, "failed to handle the update: {:#}", error);
             }
         }
 
@@ -121,7 +118,7 @@ impl Bot {
     }
 
     /// Retrieves the bot API offset from which we should read the updates.
-    #[instrument(level = "debug", skip_all, fields(self.offset_key = self.offset_key.as_str()))]
+    #[instrument(skip_all, fields(?self.offset_key))]
     async fn get_offset(&self) -> Result<u64> {
         let offset = self
             .redis
@@ -133,7 +130,7 @@ impl Bot {
         Ok(offset)
     }
 
-    #[instrument(level = "info", skip_all, fields(offset = offset))]
+    #[instrument(skip_all, fields(offset))]
     async fn set_offset(&self, offset: u64) -> Result<()> {
         self.redis
             .client
@@ -142,7 +139,7 @@ impl Bot {
             .context("failed to set the offset")
     }
 
-    #[instrument(level = "info", skip_all)]
+    #[instrument(skip_all)]
     async fn on_update(&self, payload: models::UpdatePayload) -> Result<()> {
         match payload {
             models::UpdatePayload::Message(message) => match message.text {
@@ -157,14 +154,11 @@ impl Bot {
                     .await?;
                 }
                 _ => {
-                    debug!(
-                        message.text = ?message.text,
-                        "ignoring the unsupported message"
-                    );
+                    debug!(?message.text, "ignoring the unsupported message");
                 }
             },
             _ => {
-                debug!(payload = ?payload, "ignoring the unsupported update");
+                debug!(?payload, "ignoring the unsupported update");
             }
         }
         Ok(())
