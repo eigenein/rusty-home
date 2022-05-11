@@ -11,22 +11,13 @@ use crate::opts::ServiceOpts;
 use crate::{models, Api};
 
 pub struct Service {
-    api: Api,
-    redis: Redis,
-    heartbeat: Heartbeat,
-    opts: ServiceOpts,
+    pub api: Api,
+    pub redis: Redis,
+    pub heartbeat: Heartbeat,
+    pub opts: ServiceOpts,
 }
 
 impl Service {
-    pub fn new(api: Api, redis: Redis, heartbeat: Heartbeat, opts: ServiceOpts) -> Self {
-        Self {
-            api,
-            redis,
-            heartbeat,
-            opts,
-        }
-    }
-
     pub async fn run(&self) -> Result<()> {
         let (user_id, access_token) = self
             .get_authentication()

@@ -26,11 +26,11 @@ async fn run(opts: Opts) -> Result<()> {
     let redis =
         rusty_shared_redis::Redis::connect(&opts.redis.addresses, opts.redis.service_name).await?;
 
-    let service = Service::new(
-        Api::new()?,
+    let service = Service {
+        api: Api::new()?,
         redis,
-        opts.heartbeat.get_heartbeat()?,
-        opts.service,
-    );
+        heartbeat: opts.heartbeat.get_heartbeat()?,
+        opts: opts.service,
+    };
     service.run().await
 }
