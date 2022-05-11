@@ -1,4 +1,8 @@
+use std::str::FromStr;
+
+use anyhow::Error;
 use clap::Parser;
+use new_string_template::template::Template;
 use rusty_shared_opts::{heartbeat, redis, sentry};
 
 #[derive(Parser)]
@@ -42,6 +46,16 @@ pub struct BatteryOpts {
     )]
     pub full_level: u8,
 
+    /// Full battery message template.
+    /// The template is rendered as MarkdownV2.
+    #[clap(
+        long = "battery-full-message",
+        env = "RUSTY_TRACTIVE_BATTERY_FULL_MESSAGE",
+        default_value = "🔋 *{current_level}%* Battery is now full!",
+        next_line_help = true
+    )]
+    pub full_message: TemplateArg,
+
     /// Maximum battery level which is treated as low
     #[clap(
         long = "battery-low-level",
@@ -50,6 +64,15 @@ pub struct BatteryOpts {
     )]
     pub low_level: u8,
 
+    /// Low battery message template
+    #[clap(
+        long = "battery-low-message",
+        env = "RUSTY_TRACTIVE_BATTERY_LOW_MESSAGE",
+        default_value = "⚡️ *{current_level}%* battery level is getting low️",
+        next_line_help = true
+    )]
+    pub low_message: TemplateArg,
+
     /// Maximum battery level which is treated as critically low
     #[clap(
         long = "battery-critical-level",
@@ -57,4 +80,23 @@ pub struct BatteryOpts {
         default_value = "15"
     )]
     pub critical_level: u8,
+
+    /// Critically low battery message template
+    #[clap(
+        long = "battery-critical-message",
+        env = "RUSTY_TRACTIVE_BATTERY_CRITICAL_MESSAGE",
+        default_value = "🪫 *{current_level}%* battery level is critical️",
+        next_line_help = true
+    )]
+    pub critical_message: TemplateArg,
+}
+
+pub struct TemplateArg(pub Template);
+
+impl FromStr for TemplateArg {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(TemplateArg(Template::new(s)))
+    }
 }

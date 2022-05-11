@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use fred::prelude::*;
 use fred::types::{RedisKey, XReadResponse, XID};
 use gethostname::gethostname;
@@ -272,36 +272,29 @@ impl Listener {
     ) -> Result<()> {
         info!(current_level, last_level, "battery level changed");
         let last_level = last_level.unwrap_or(current_level);
+        let template_values = HashMap::from([("current_level", current_level.to_string())]);
 
-        if current_level >= self.battery_opts.full_level
+        let text = if current_level >= self.battery_opts.full_level
             && last_level < self.battery_opts.full_level
         {
-            SendMessage::new(
-                &self.chat_id,
-                format!("🔋 *{}%* Battery is now full!", current_level),
-            )
-            .parse_mode(ParseMode::MarkdownV2)
-            .call(&self.bot_api)
-            .await?;
+            self.battery_opts.full_message.0.render(&template_values)?
         } else if current_level <= self.battery_opts.low_level
             && last_level > self.battery_opts.low_level
         {
-            SendMessage::new(
-                &self.chat_id,
-                format!("⚡ *{}%* battery level is getting low️", current_level),
-            )
-            .parse_mode(ParseMode::MarkdownV2)
-            .call(&self.bot_api)
-            .await?;
+            self.battery_opts.low_message.0.render(&template_values)?
         } else if current_level <= self.battery_opts.critical_level {
-            SendMessage::new(
-                &self.chat_id,
-                format!("🪫 *{}%* battery level is critical️", current_level),
-            )
+            self.battery_opts
+                .critical_message
+                .0
+                .render(&template_values)?
+        } else {
+            return Ok(());
+        };
+        SendMessage::new(&self.chat_id, text)
             .parse_mode(ParseMode::MarkdownV2)
             .call(&self.bot_api)
-            .await?;
-        }
+            .await
+            .context("failed to send the battery notification")?;
         Ok(())
     }
 }
