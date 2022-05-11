@@ -1517,7 +1517,6 @@ dependencies = [
  "anyhow",
  "clap",
  "reqwest",
- "sentry",
  "tracing",
 ]
 
@@ -1548,6 +1547,7 @@ name = "rusty-shared-tracing"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "rusty-shared-opts",
  "sentry",
  "tracing",
  "tracing-journald",

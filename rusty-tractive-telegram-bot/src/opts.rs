@@ -20,6 +20,12 @@ pub struct Opts {
     #[clap(flatten)]
     pub tracing: rusty_shared_opts::tracing::Opts,
 
+    #[clap(flatten)]
+    pub service: ServiceOpts,
+}
+
+#[derive(Parser)]
+pub struct ServiceOpts {
     /// Telegram Bot API token.
     #[clap(long, env = "RUSTY_TELEGRAM_BOT_TOKEN")]
     pub bot_token: String,

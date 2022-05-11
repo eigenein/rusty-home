@@ -1,11 +1,26 @@
+use std::borrow::Cow;
+
 use anyhow::Result;
 use sentry::integrations::tracing::EventFilter;
+use sentry::{ClientInitGuard, ClientOptions};
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-pub fn init(enable_journald: bool) -> Result<()> {
+pub fn init(
+    tracing_opts: rusty_shared_opts::tracing::Opts,
+    sentry_opts: rusty_shared_opts::sentry::Opts,
+) -> Result<ClientInitGuard> {
+    let guard = sentry::init((
+        sentry_opts.dsn,
+        ClientOptions {
+            release: Some(Cow::Borrowed(env!("CARGO_PKG_VERSION"))),
+            traces_sample_rate: sentry_opts.traces_sample_rate,
+            ..Default::default()
+        },
+    ));
+
     sentry::configure_scope(|scope| {
         scope.set_tag("app.name", env!("CARGO_CRATE_NAME"));
     });
@@ -29,7 +44,7 @@ pub fn init(enable_journald: bool) -> Result<()> {
     tracing_subscriber::Registry::default()
         .with(sentry_layer)
         .with(format_layer)
-        .with(if enable_journald {
+        .with(if tracing_opts.enable_journald {
             let filter = EnvFilter::try_from_env("RUSTY_HOME_JOURNALD")
                 .or_else(|_| EnvFilter::try_new("info"))?;
             let layer = tracing_journald::layer()?
@@ -42,5 +57,5 @@ pub fn init(enable_journald: bool) -> Result<()> {
         })
         .init();
 
-    Ok(())
+    Ok(guard)
 }

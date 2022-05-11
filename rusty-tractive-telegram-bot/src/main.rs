@@ -8,7 +8,7 @@ use tracing::error;
 
 use crate::bot::Bot;
 use crate::listener::Listener;
-use crate::opts::Opts;
+use crate::opts::{Opts, ServiceOpts};
 
 mod bot;
 mod listener;
@@ -17,32 +17,34 @@ mod opts;
 #[async_std::main]
 async fn main() {
     let opts: Opts = Opts::parse();
-    let _guard = opts.sentry.init();
-    rusty_shared_tracing::init(opts.tracing.enable_journald).unwrap();
+    let _guard = rusty_shared_tracing::init(opts.tracing, opts.sentry).unwrap();
 
-    if let Err(error) = run(opts).await {
+    if let Err(error) = run(opts.redis, opts.heartbeat, opts.service).await {
         error!("fatal error: {:#}", error);
     }
 }
 
-async fn run(opts: Opts) -> Result<()> {
-    let bot_api = BotApi::new(opts.bot_token, std::time::Duration::from_secs(5))?;
+async fn run(
+    redis_opts: rusty_shared_opts::redis::Opts,
+    heartbeat_opts: rusty_shared_opts::heartbeat::Opts,
+    service_opts: ServiceOpts,
+) -> Result<()> {
+    let bot_api = BotApi::new(service_opts.bot_token, std::time::Duration::from_secs(5))?;
     let me = methods::GetMe.call(&bot_api).await?;
     let redis =
-        rusty_shared_redis::Redis::connect(&opts.redis.addresses, opts.redis.service_name.clone())
-            .await?;
+        rusty_shared_redis::Redis::connect(&redis_opts.addresses, redis_opts.service_name).await?;
 
-    let tracker_id = opts.tracker_id.to_lowercase();
+    let tracker_id = service_opts.tracker_id.to_lowercase();
     let bot = { Bot::new(redis.clone().await?, bot_api.clone(), me.id) };
     let listener = {
         Listener::new(
             redis,
             bot_api,
-            opts.heartbeat.get_heartbeat()?,
+            heartbeat_opts.get_heartbeat()?,
             me.id,
             &tracker_id,
-            opts.chat_id,
-            opts.battery,
+            service_opts.chat_id,
+            service_opts.battery,
         )
         .await?
     };
