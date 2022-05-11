@@ -92,7 +92,7 @@ impl Service {
 
     #[instrument(level = "info", skip_all)]
     async fn on_handshake(&self, payload: models::HandshakeMessage) -> Result<()> {
-        info!(keep_alive_ttl = %payload.keep_alive_ttl, "🐈 meow!");
+        info!(keep_alive_ttl = ?payload.keep_alive_ttl, "🐈 meow!");
         Ok(())
     }
 

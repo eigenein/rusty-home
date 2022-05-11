@@ -62,10 +62,7 @@ impl Api {
             .json()
             .await
             .context("failed to deserialize the authentication token")?;
-        info!(
-            expires_at = token.expires_at.to_string().as_str(),
-            "authenticated",
-        );
+        info!(expires_at = ?token.expires_at, "authenticated");
         Ok(token)
     }
 

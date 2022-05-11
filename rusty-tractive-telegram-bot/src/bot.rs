@@ -98,7 +98,7 @@ impl Bot {
             .await?;
 
         for update in updates {
-            info!(update.id = update.id);
+            info!(update.id, "handling the update…");
 
             // I update the offset before calling `on_update` to avoid getting stuck
             // in case of a permanent error.
