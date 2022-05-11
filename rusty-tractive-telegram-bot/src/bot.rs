@@ -4,6 +4,7 @@ use std::time;
 use anyhow::{Context, Result};
 use async_std::task;
 use fred::prelude::*;
+use fred::types::RedisKey;
 use gethostname::gethostname;
 use rusty_shared_redis::Redis;
 use rusty_shared_telegram::api::BotApi;
@@ -17,9 +18,10 @@ pub struct Bot {
     hostname: String,
 
     /// Redis key that stores the next offset for `getUpdates`.
-    offset_key: String,
+    offset_key: RedisKey,
 
-    get_updates_key: String,
+    /// Stores hostname which is handling the updates at the moment.
+    get_updates_key: RedisKey,
 }
 
 impl Bot {
@@ -31,8 +33,8 @@ impl Bot {
             redis,
             bot_api,
             hostname: gethostname().into_string().unwrap(),
-            offset_key: format!("rusty:telegram:{}:offset", bot_user_id),
-            get_updates_key: format!("rusty:telegram:{}:get_updates", bot_user_id),
+            offset_key: RedisKey::from(format!("rusty:telegram:{}:offset", bot_user_id)),
+            get_updates_key: RedisKey::from(format!("rusty:telegram:{}:get_updates", bot_user_id)),
         }
     }
 
