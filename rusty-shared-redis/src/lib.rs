@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use anyhow::{bail, Context, Result};
 use fred::prelude::*;
-use fred::types::{MultipleKeys, MultipleValues, RedisKey, XID};
+use fred::types::{MultipleKeys, MultipleValues, RedisKey};
 use tracing::{debug, info, instrument};
 
 pub struct Redis {
@@ -14,6 +14,7 @@ pub struct Redis {
 #[derive(Debug, Clone)]
 struct ScriptHashes {
     set_if_greater: String,
+    create_consumer_group: String,
 }
 
 impl Redis {
@@ -45,17 +46,11 @@ impl Redis {
         &self,
         key: K,
         group_name: &str,
-    ) -> Result<(), RedisError> {
+    ) -> Result<bool> {
         self.client
-            .xgroup_create(key, group_name, XID::Max, true)
+            .evalsha(&self.script_hashes.create_consumer_group, key, group_name)
             .await
-            .or_else(|error| {
-                if error.details().starts_with("BUSYGROUP") {
-                    Ok(())
-                } else {
-                    Err(error)
-                }
-            })
+            .context("script failed")
     }
 
     #[instrument(skip_all, fields(key = ?key))]
@@ -118,11 +113,16 @@ async fn connect(client: &RedisClient) -> Result<()> {
 #[instrument(skip_all)]
 async fn load_scripts(client: &RedisClient) -> Result<ScriptHashes> {
     let set_if_greater = client.script_load(SET_IF_GREATER_SCRIPT).await?;
-    let hashes = ScriptHashes { set_if_greater };
+    let create_consumer_group = client.script_load(CREATE_CONSUMER_GROUP).await?;
+    let hashes = ScriptHashes {
+        set_if_greater,
+        create_consumer_group,
+    };
     info!(hashes = ?hashes, "loaded the scripts");
     Ok(hashes)
 }
 
+/// Set value, if it's greater than the stored one if any.
 // language=lua
 const SET_IF_GREATER_SCRIPT: &str = r#"
     local new_value = tonumber(ARGV[1]);
@@ -134,4 +134,20 @@ const SET_IF_GREATER_SCRIPT: &str = r#"
     else
         return {0, last_value}
     end
+"#;
+
+/// Create a consumer group, if not exists.
+// language=lua
+const CREATE_CONSUMER_GROUP: &str = r#"
+    for _, group_info in ipairs(redis.call("XINFO", "GROUPS", KEYS[1])) do
+        for i = 1, #group_info, 2 do
+            if group_info[i] == "name" and group_info[i + 1] == ARGV[1] then
+                -- The group already exists.
+                return 0
+            end
+        end
+    end
+
+    redis.call("XGROUP", "CREATE", KEYS[1], ARGV[1], "$", "MKSTREAM")
+    return 1
 "#;
