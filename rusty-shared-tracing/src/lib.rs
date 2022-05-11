@@ -17,10 +17,7 @@ pub fn init(enable_journald: bool) -> Result<()> {
             _ => EventFilter::Ignore,
         })
         .span_filter(|metadata| {
-            matches!(
-                metadata.level(),
-                &Level::ERROR | &Level::WARN | &Level::INFO | &Level::DEBUG
-            )
+            matches!(metadata.level(), &Level::ERROR | &Level::WARN | &Level::INFO | &Level::DEBUG)
         });
 
     let format_filter =

@@ -35,10 +35,7 @@ impl Service {
     async fn get_authentication(&self) -> Result<(String, String)> {
         let key = format!("rusty:tractive:{}:authentication", self.opts.email);
         let authentication: HashMap<String, String> = self.redis.client.hgetall(&key).await?;
-        let result = match (
-            authentication.get("user_id"),
-            authentication.get("access_token"),
-        ) {
+        let result = match (authentication.get("user_id"), authentication.get("access_token")) {
             (Some(user_id), Some(access_token)) => {
                 debug!("using the cached token");
                 (user_id.clone(), access_token.clone())
@@ -89,10 +86,7 @@ impl Service {
 
     #[instrument(level = "debug", skip_all)]
     async fn on_keep_alive(&self, payload: models::KeepAliveMessage) -> Result<()> {
-        debug!(
-            timestamp = payload.timestamp.to_string().as_str(),
-            "🐈 purr…",
-        );
+        debug!(timestamp = payload.timestamp.to_string().as_str(), "🐈 purr…",);
         Ok(())
     }
 

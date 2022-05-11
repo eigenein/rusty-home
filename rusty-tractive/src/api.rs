@@ -27,14 +27,8 @@ impl Api {
             header::CONTENT_TYPE,
             HeaderValue::from_static("application/json;charset=UTF-8"),
         );
-        headers.insert(
-            header::ACCEPT_ENCODING,
-            HeaderValue::from_static("application/json"),
-        );
-        headers.insert(
-            "X-Tractive-Client",
-            HeaderValue::from_static("625e533dc3c3b41c28a669f0"),
-        );
+        headers.insert(header::ACCEPT_ENCODING, HeaderValue::from_static("application/json"));
+        headers.insert("X-Tractive-Client", HeaderValue::from_static("625e533dc3c3b41c28a669f0"));
         let client = Client::builder()
             .gzip(true)
             .default_headers(headers)
