@@ -20,7 +20,7 @@ Each host is running a `redis-server` and [`redis-sentinel`](https://redis.io/do
 Each host is running a set of microservices – ideally, all of them – via `systemd`. The microservices should use [Redis consumer groups](https://redis.io/docs/manual/data-types/streams/#consumer-groups) to ensure reliable processing of messages.
 
 - Errors and performance are monitored by [Sentry](https://sentry.io/)
-- Liveness is monitored by [Better Uptime](https://betteruptime.com/)
+- Liveness is monitored by [Better Uptime](https://betteruptime.com/), see also the «Heartbeat» sections in the `README`s
 - Logs are handled by `journald`
 - Configuration is synced by [Syncthing](https://syncthing.net/)
 
