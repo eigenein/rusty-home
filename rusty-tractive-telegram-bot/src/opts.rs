@@ -57,7 +57,7 @@ pub struct BatteryOpts {
     #[clap(
         long = "battery-full-message",
         env = "RUSTY_TRACTIVE_BATTERY_FULL_MESSAGE",
-        default_value = "🔋 *{current_level}%* Battery is now full!",
+        default_value = r#"🔋 *{current_level}%* Battery is now full\!"#,
         next_line_help = true
     )]
     pub full_message: TemplateArg,
