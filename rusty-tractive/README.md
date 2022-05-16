@@ -1,6 +1,6 @@
 # 🐈 `rusty-tractive`
 
-Integrates [Tractive](https://tractive.com/).
+Integrates [Tractive](https://tractive.com/) and streams the pet location and hardware status.
 
 ## Streams
 
