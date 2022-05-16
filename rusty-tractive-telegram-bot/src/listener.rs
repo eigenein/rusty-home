@@ -115,7 +115,7 @@ impl Listener {
                 &self.group_name,
                 &self.consumer_name,
                 None,
-                Some(0),
+                Some(0), // FIXME: set `block` and timeout on the call to prevent the freezes.
                 true,
                 vec![&self.keys.position_stream, &self.keys.hardware_stream],
                 vec![XID::NewInGroup, XID::NewInGroup],
