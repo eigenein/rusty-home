@@ -129,7 +129,7 @@ fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<R
 
 #[instrument(skip_all)]
 async fn connect(client: &RedisClient) -> Result<()> {
-    client.connect(Some(Default::default()));
+    client.connect(None);
     debug!("awaiting connection…");
     client
         .wait_for_connect()
