@@ -1,4 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
+use rusty_shared_tractive::HardwareEntry;
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -52,15 +53,11 @@ pub struct KeepAliveMessage {
     pub timestamp: DateTime<Utc>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct TrackerStatusMessage {
     pub tracker_id: String,
-
-    pub hardware: Option<Hardware>,
-
+    pub hardware: Option<HardwareEntry>,
     pub position: Option<Position>,
-
     pub live_tracking: Option<LiveTracking>,
 }
 
@@ -69,18 +66,6 @@ pub struct TrackerStatusMessage {
 pub struct LiveTracking {
     #[serde(rename = "active")]
     pub is_active: bool,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-pub struct Hardware {
-    pub battery_level: u8,
-
-    #[serde(
-        rename = "time",
-        deserialize_with = "chrono::serde::ts_seconds::deserialize"
-    )]
-    pub timestamp: DateTime<Utc>,
 }
 
 #[allow(dead_code)]

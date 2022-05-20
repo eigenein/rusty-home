@@ -1628,6 +1628,9 @@ dependencies = [
  "chrono",
  "fred",
  "kv-derive",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]
@@ -1652,6 +1655,7 @@ dependencies = [
  "clap",
  "fred",
  "futures",
+ "kv-derive",
  "reqwest",
  "rusty-shared-opts",
  "rusty-shared-redis",

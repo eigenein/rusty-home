@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use anyhow::{Context, Result};
 use fred::prelude::*;
 use futures::TryStreamExt;
+use kv_derive::prelude::*;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::Redis;
-use rusty_shared_tractive::{hardware_stream_key, position_stream_key};
+use rusty_shared_tractive::{hardware_stream_key, position_stream_key, HardwareEntry};
 use tracing::{debug, info, instrument};
 
 use crate::opts::ServiceOpts;
@@ -105,7 +106,7 @@ impl Service {
     }
 
     #[instrument(level = "info", skip_all)]
-    async fn on_hardware_update(&self, tracker_id: &str, hardware: models::Hardware) -> Result<()> {
+    async fn on_hardware_update(&self, tracker_id: &str, hardware: HardwareEntry) -> Result<()> {
         info!(timestamp = ?hardware.timestamp, battery_level = hardware.battery_level, "⌚ hardware update️");
         let (is_timestamp_updated, _) = self
             .redis
@@ -126,10 +127,7 @@ impl Service {
                 false,
                 None,
                 format!("{}-0", hardware.timestamp.timestamp_millis()),
-                vec![
-                    ("ts", RedisValue::from(hardware.timestamp.timestamp())),
-                    ("battery", RedisValue::from(hardware.battery_level)),
-                ],
+                hardware.into_vec(),
             )
             .await
             .context("failed to push the hardware stream entry")
