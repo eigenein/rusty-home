@@ -18,3 +18,4 @@ rusty-shared-opts = { path = "../rusty-shared-opts" }
 rusty-shared-redis = { path = "../rusty-shared-redis" }
 rusty-shared-telegram = { path = "../rusty-shared-telegram" }
 rusty-shared-tracing = { path = "../rusty-shared-tracing" }
+rusty-shared-tractive = { path = "../rusty-shared-tractive" }

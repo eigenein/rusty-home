@@ -9,6 +9,7 @@ use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::{get_parsed, Redis};
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::{methods::*, models::*};
+use rusty_shared_tractive::{hardware_stream_key, position_stream_key};
 use tracing::{debug, error, info, instrument};
 
 use crate::opts::BatteryOpts;
@@ -60,12 +61,12 @@ impl Listener {
     ) -> Result<Self> {
         let group_name = format!("rusty:telegram:{}", bot_user_id);
 
-        let position_stream_key = RedisKey::from(format!("rusty:tractive:{}:position", tracker_id));
+        let position_stream_key = position_stream_key(tracker_id);
         redis
             .create_consumer_group(&position_stream_key, &group_name)
             .await?;
 
-        let hardware_stream_key = RedisKey::from(format!("rusty:tractive:{}:hardware", tracker_id));
+        let hardware_stream_key = hardware_stream_key(tracker_id);
         redis
             .create_consumer_group(&hardware_stream_key, &group_name)
             .await?;

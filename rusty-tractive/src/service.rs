@@ -5,6 +5,7 @@ use fred::prelude::*;
 use futures::TryStreamExt;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::Redis;
+use rusty_shared_tractive::{hardware_stream_key, position_stream_key};
 use tracing::{debug, info, instrument};
 
 use crate::opts::ServiceOpts;
@@ -121,7 +122,7 @@ impl Service {
         self.redis
             .client
             .xadd(
-                format!("rusty:tractive:{}:hardware", tracker_id),
+                hardware_stream_key(tracker_id),
                 false,
                 None,
                 format!("{}-0", hardware.timestamp.timestamp_millis()),
@@ -169,7 +170,7 @@ impl Service {
         self.redis
             .client
             .xadd(
-                format!("rusty:tractive:{}:position", tracker_id),
+                position_stream_key(tracker_id),
                 false,
                 None,
                 format!("{}-0", position.timestamp.timestamp_millis()),

@@ -4,6 +4,7 @@ members = [
     "rusty-shared-redis",
     "rusty-shared-telegram",
     "rusty-shared-tracing",
+    "rusty-shared-tractive",
     "rusty-tado",
     "rusty-tractive",
     "rusty-tractive-telegram-bot",
