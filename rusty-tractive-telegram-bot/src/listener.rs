@@ -8,7 +8,8 @@ use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::{get_parsed, Redis};
 use rusty_shared_telegram::api::BotApi;
-use rusty_shared_telegram::{methods::*, models::*};
+use rusty_shared_telegram::methods::*;
+use rusty_shared_telegram::models::*;
 use rusty_shared_tractive::{hardware_stream_key, position_stream_key};
 use tracing::{debug, error, info, instrument};
 

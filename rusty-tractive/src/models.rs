@@ -1,8 +1,9 @@
+use std::time;
+
 use chrono::{DateTime, Utc};
 use rusty_shared_tractive::HardwareEntry;
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
-use std::time;
 
 #[must_use]
 #[derive(Deserialize)]
@@ -88,7 +89,6 @@ mod tests {
     use anyhow::{bail, Result};
     use chrono::TimeZone;
     use serde_json::from_str;
-    use std::time;
 
     use super::*;
 
