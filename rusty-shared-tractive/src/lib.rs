@@ -1,4 +1,6 @@
-use chrono::{DateTime, TimeZone, Utc};
+mod kv_derive_with;
+
+use chrono::{DateTime, Utc};
 use fred::types::RedisKey;
 use kv_derive::prelude::*;
 use kv_derive::{FromMapping, IntoVec};
@@ -8,8 +10,8 @@ use serde::Deserialize;
 pub struct HardwareEntry {
     #[kv(
         rename = "ts",
-        into_repr_with = "|timestamp: DateTime<Utc>| timestamp.timestamp()",
-        from_repr_with = "|secs: i64| kv_derive::result::Result::Ok(Utc.timestamp(secs, 0))"
+        into_repr_with = "crate::kv_derive_with::to_timestamp",
+        from_repr_with = "crate::kv_derive_with::from_timestamp"
     )]
     #[serde(
         rename = "time",
