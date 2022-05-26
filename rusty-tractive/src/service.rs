@@ -8,7 +8,9 @@ use futures::StreamExt;
 use kv_derive::prelude::*;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::Redis;
-use rusty_shared_tractive::{hardware_stream_key, position_stream_key, HardwareEntry};
+use rusty_shared_tractive::{
+    hardware_stream_key, position_stream_key, HardwareEntry, PositionEntry,
+};
 use tracing::{debug, info, instrument};
 
 use crate::models::*;
@@ -152,15 +154,6 @@ impl Service {
             info!("🎯 timestamp is not updated");
             return Ok(());
         }
-        let mut fields = vec![
-            ("ts", RedisValue::from(position.timestamp.timestamp())),
-            ("lat", RedisValue::from(latitude)),
-            ("lon", RedisValue::from(longitude)),
-            ("accuracy", RedisValue::from(position.accuracy)),
-        ];
-        if let Some(course) = position.course {
-            fields.push(("course", RedisValue::from(course)));
-        }
         self.redis
             .client
             .xadd(
@@ -168,7 +161,7 @@ impl Service {
                 false,
                 None,
                 format!("{}-0", position.timestamp.timestamp_millis()),
-                fields,
+                PositionEntry::from(position).into_vec(),
             )
             .await
             .context("failed to push the position stream entry")

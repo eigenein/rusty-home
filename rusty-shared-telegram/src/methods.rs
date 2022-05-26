@@ -203,8 +203,8 @@ impl Location {
         self
     }
 
-    pub fn heading(mut self, heading: u16) -> Self {
-        self.heading = Some(heading);
+    pub fn heading<H: Into<Option<u16>>>(mut self, heading: H) -> Self {
+        self.heading = heading.into();
         self
     }
 }

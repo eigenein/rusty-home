@@ -1,7 +1,7 @@
 use std::time;
 
 use chrono::{DateTime, Utc};
-use rusty_shared_tractive::HardwareEntry;
+use rusty_shared_tractive::{HardwareEntry, PositionEntry};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -33,7 +33,6 @@ pub enum Message {
 }
 
 #[serde_as]
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct HandshakeMessage {
     pub channel_id: String,
@@ -42,7 +41,6 @@ pub struct HandshakeMessage {
     pub keep_alive_ttl: time::Duration,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct KeepAliveMessage {
     #[serde(rename = "channelId")]
@@ -63,14 +61,12 @@ pub struct TrackerStatusMessage {
     pub live_tracking: Option<LiveTracking>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct LiveTracking {
     #[serde(rename = "active")]
     pub is_active: bool,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Position {
     pub accuracy: u32,
@@ -82,6 +78,18 @@ pub struct Position {
         deserialize_with = "chrono::serde::ts_seconds::deserialize"
     )]
     pub timestamp: DateTime<Utc>,
+}
+
+impl From<Position> for PositionEntry {
+    fn from(position: Position) -> Self {
+        Self {
+            timestamp: position.timestamp,
+            latitude: position.latlong.0,
+            longitude: position.latlong.1,
+            accuracy: position.accuracy,
+            course: position.course,
+        }
+    }
 }
 
 #[cfg(test)]

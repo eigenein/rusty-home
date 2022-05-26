@@ -23,6 +23,27 @@ pub struct HardwareEntry {
     pub battery_level: u8,
 }
 
+#[derive(IntoVec, FromMapping, Debug)]
+pub struct PositionEntry {
+    #[kv(
+        rename = "ts",
+        into_repr_with = "crate::kv_derive_with::to_timestamp",
+        from_repr_with = "crate::kv_derive_with::from_timestamp"
+    )]
+    pub timestamp: DateTime<Utc>,
+
+    #[kv(rename = "lat")]
+    pub latitude: f64,
+
+    #[kv(rename = "lon")]
+    pub longitude: f64,
+
+    pub accuracy: u32,
+
+    #[kv(optional, default())]
+    pub course: Option<u16>,
+}
+
 pub fn hardware_stream_key(tracker_id: &str) -> RedisKey {
     RedisKey::from(format!("rusty:tractive:{}:hardware", tracker_id.to_lowercase()))
 }

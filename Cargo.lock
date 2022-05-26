@@ -1000,9 +1000,9 @@ dependencies = [
 
 [[package]]
 name = "kv-derive"
-version = "1.0.0-rc.9"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a64ba4ce7543d46d0449365247895f39464e667b5b4434be025dffc6900a0e6"
+checksum = "da1ccf9fb311f4101f712b39bc25e6519582a517a4f2418511193a739cae9a82"
 dependencies = [
  "kv-derive-impl",
  "kv-derive-macro",
@@ -1010,18 +1010,18 @@ dependencies = [
 
 [[package]]
 name = "kv-derive-impl"
-version = "1.0.0-rc.9"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e57e304bbac25037c5949ab8ddf95ddbad6d2eddb06c16880780f02907536ad"
+checksum = "40d8cb53dba1b00271fe5077ec77436bd72649355ce44464ba49e9a7f7f38bbd"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "kv-derive-macro"
-version = "1.0.0-rc.9"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e01b0c681c9a2d9ad7f0322eef0078b27711cf9776ffdbbb672173ff1a9701b6"
+checksum = "be146a7bdfc6bd474694290d384701c001391fff517cf27a9ff04fbba4d950b2"
 dependencies = [
  "darling 0.14.1",
  "kv-derive-impl",

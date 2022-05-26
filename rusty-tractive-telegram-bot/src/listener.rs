@@ -6,11 +6,13 @@ use fred::prelude::*;
 use fred::types::{RedisKey, XReadResponse, XID};
 use gethostname::gethostname;
 use rusty_shared_opts::heartbeat::Heartbeat;
-use rusty_shared_redis::{get_parsed, Redis};
+use rusty_shared_redis::Redis;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::*;
 use rusty_shared_telegram::models::*;
-use rusty_shared_tractive::{hardware_stream_key, position_stream_key};
+use rusty_shared_tractive::{
+    hardware_stream_key, position_stream_key, HardwareEntry, PositionEntry,
+};
 use tracing::{debug, error, info, instrument};
 
 use crate::opts::BatteryOpts;
@@ -128,11 +130,11 @@ impl Listener {
             info!(?stream_id, n_entries = entries.len());
             if stream_id == self.keys.position_stream {
                 for (entry_id, entry) in entries {
-                    self.on_position_entry(&entry_id, entry).await?;
+                    self.on_position_entry(&entry_id, entry.try_into()?).await?;
                 }
             } else if stream_id == self.keys.hardware_stream {
                 for (entry_id, entry) in entries {
-                    self.on_hardware_entry(&entry_id, entry).await?;
+                    self.on_hardware_entry(&entry_id, entry.try_into()?).await?;
                 }
             }
         }
@@ -140,23 +142,12 @@ impl Listener {
         Ok(())
     }
 
-    #[instrument(skip_all, fields(entry_id = entry_id))]
-    async fn on_position_entry(
-        &self,
-        entry_id: &str,
-        fields: HashMap<String, String>,
-    ) -> Result<()> {
-        debug!(fields = ?fields);
-        let location = Location::new(
-            self.chat_id.clone(),
-            get_parsed(&fields, "lat")?,
-            get_parsed(&fields, "lon")?,
-        );
-        let location = location.horizontal_accuracy(get_parsed(&fields, "accuracy")?);
-        let location = match fields.get("course") {
-            Some(course) => location.heading(course.parse::<u16>()?),
-            None => location,
-        };
+    #[instrument(skip_all, fields(entry_id = _entry_id))]
+    async fn on_position_entry(&self, _entry_id: &str, entry: PositionEntry) -> Result<()> {
+        debug!(entry = ?entry);
+        let location = Location::new(self.chat_id.clone(), entry.latitude, entry.longitude)
+            .horizontal_accuracy(entry.accuracy as f32)
+            .heading(entry.course);
         info!(
             latitude = location.latitude,
             longitude = location.longitude,
@@ -246,14 +237,9 @@ impl Listener {
         Ok(())
     }
 
-    #[instrument(skip_all, fields(entry_id = entry_id))]
-    async fn on_hardware_entry(
-        &self,
-        entry_id: &str,
-        fields: HashMap<String, String>,
-    ) -> Result<()> {
-        debug!(fields = ?fields);
-        let battery_level: u8 = get_parsed(&fields, "battery")?;
+    #[instrument(skip_all, fields(entry_id = _entry_id))]
+    async fn on_hardware_entry(&self, _entry_id: &str, entry: HardwareEntry) -> Result<()> {
+        let battery_level: u8 = entry.battery_level;
         info!(battery_level, "new hardware entry");
         let (is_updated, last_level) = self
             .redis

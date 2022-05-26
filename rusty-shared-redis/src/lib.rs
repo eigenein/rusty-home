@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::net::SocketAddr;
-use std::str::FromStr;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use fred::prelude::*;
 use fred::types::{MultipleKeys, MultipleValues, RedisKey};
 use tracing::{debug, info, instrument};
@@ -83,18 +81,6 @@ impl Redis {
             .await
             .context("script failed")
     }
-}
-
-pub fn get_parsed<T>(fields: &HashMap<String, String>, key: &str) -> Result<T>
-where
-    T: FromStr,
-    <T as FromStr>::Err: 'static + std::error::Error + Send + Sync,
-{
-    fields
-        .get(key)
-        .ok_or_else(|| anyhow!("missing `{}`", key))?
-        .parse()
-        .with_context(|| format!("failed to parse `{}`", key))
 }
 
 fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<RedisConfig> {
