@@ -1,7 +1,8 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use rusty_shared_tractive::HardwareEntry;
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
+use std::time;
 
 #[must_use]
 #[derive(Deserialize)]
@@ -36,8 +37,8 @@ pub enum Message {
 pub struct HandshakeMessage {
     pub channel_id: String,
 
-    #[serde_as(as = "DurationSeconds<i64>")]
-    pub keep_alive_ttl: Duration,
+    #[serde_as(as = "DurationSeconds<u64>")]
+    pub keep_alive_ttl: time::Duration,
 }
 
 #[allow(dead_code)]
@@ -87,6 +88,7 @@ mod tests {
     use anyhow::{bail, Result};
     use chrono::TimeZone;
     use serde_json::from_str;
+    use std::time;
 
     use super::*;
 
@@ -99,7 +101,7 @@ mod tests {
         match message {
             Message::Handshake(message) => {
                 assert_eq!(message.channel_id, "channel_censored");
-                assert_eq!(message.keep_alive_ttl, Duration::seconds(600));
+                assert_eq!(message.keep_alive_ttl, time::Duration::from_secs(600));
                 Ok(())
             }
             _ => bail!("incorrect message type: {:?}", message),

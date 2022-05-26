@@ -38,7 +38,7 @@ impl Api {
         Ok(Self { client })
     }
 
-    #[instrument(level = "info", skip_all, fields(email = email))]
+    #[instrument(skip_all, fields(email = email))]
     pub async fn authenticate(&self, email: &str, password: &str) -> Result<Token> {
         let token: Token = self
             .client
@@ -60,7 +60,7 @@ impl Api {
         Ok(token)
     }
 
-    #[instrument(level = "debug", skip_all, fields(user_id = user_id))]
+    #[instrument(skip_all, fields(user_id = user_id))]
     pub async fn get_messages(
         &self,
         user_id: &str,
@@ -77,7 +77,7 @@ impl Api {
             .error_for_status()
             .context("the channel request failed")?
             .bytes_stream()
-            .map_err(|error| ::std::io::Error::new(ErrorKind::Other, error))
+            .map_err(|error| std::io::Error::new(ErrorKind::Other, error))
             .into_async_read()
             .lines()
             .try_filter_map(|line| async move {

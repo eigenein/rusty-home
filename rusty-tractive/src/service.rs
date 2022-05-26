@@ -1,16 +1,19 @@
 use std::collections::HashMap;
+use std::time;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+use async_std::future::timeout;
 use fred::prelude::*;
-use futures::TryStreamExt;
+use futures::StreamExt;
 use kv_derive::prelude::*;
 use rusty_shared_opts::heartbeat::Heartbeat;
 use rusty_shared_redis::Redis;
 use rusty_shared_tractive::{hardware_stream_key, position_stream_key, HardwareEntry};
 use tracing::{debug, info, instrument};
 
+use crate::models::*;
 use crate::opts::ServiceOpts;
-use crate::{models, Api};
+use crate::Api;
 
 pub struct Service {
     pub api: Api,
@@ -25,15 +28,30 @@ impl Service {
             .get_authentication()
             .await
             .context("failed to authenticate")?;
-        self.api
-            .get_messages(&user_id, &access_token)
-            .await?
-            .try_filter_map(|message| async move { self.on_message(message).await.map(Some) })
-            .try_collect()
-            .await
+
+        let mut messages = Box::pin(self.api.get_messages(&user_id, &access_token).await?);
+        let mut keep_alive_ttl = time::Duration::from_secs(600);
+
+        while let Some(message) = timeout(keep_alive_ttl, messages.next()).await? {
+            match message? {
+                Message::Handshake(payload) => {
+                    info!(keep_alive_ttl = ?payload.keep_alive_ttl, "🐈 meow!");
+                    keep_alive_ttl = payload.keep_alive_ttl;
+                }
+                Message::KeepAlive(payload) => {
+                    debug!(timestamp = ?payload.timestamp, "🐈 purr…",);
+                }
+                Message::TrackerStatus(payload) => {
+                    self.on_tracker_status(payload).await?;
+                }
+                _ => {}
+            };
+        }
+
+        bail!("the message stream has ended unexpectedly");
     }
 
-    #[tracing::instrument(level = "info", skip_all, fields(self.email = ?self.opts.email))]
+    #[tracing::instrument(skip_all, fields(self.email = ?self.opts.email))]
     async fn get_authentication(&self) -> Result<(String, String)> {
         let key = format!("rusty:tractive:{}:authentication", self.opts.email);
         let authentication: HashMap<String, String> = self.redis.client.hgetall(&key).await?;
@@ -55,8 +73,8 @@ impl Service {
         Ok(result)
     }
 
-    #[instrument(level = "info", skip_all, fields(user_id = ?token.user_id))]
-    async fn store_access_token(&self, key: &str, token: &models::Token) -> Result<()> {
+    #[instrument(skip_all, fields(user_id = ?token.user_id))]
+    async fn store_access_token(&self, key: &str, token: &Token) -> Result<()> {
         let values = vec![
             ("user_id", &token.user_id),
             ("access_token", &token.access_token),
@@ -70,30 +88,8 @@ impl Service {
         Ok(())
     }
 
-    #[instrument(level = "debug", skip_all)]
-    async fn on_message(&self, message: models::Message) -> Result<()> {
-        match message {
-            models::Message::Handshake(payload) => self.on_handshake(payload).await,
-            models::Message::KeepAlive(payload) => self.on_keep_alive(payload).await,
-            models::Message::TrackerStatus(payload) => self.on_tracker_status(payload).await,
-            _ => Ok(()),
-        }
-    }
-
-    #[instrument(level = "info", skip_all)]
-    async fn on_handshake(&self, payload: models::HandshakeMessage) -> Result<()> {
-        info!(keep_alive_ttl = ?payload.keep_alive_ttl, "🐈 meow!");
-        Ok(())
-    }
-
-    #[instrument(level = "debug", skip_all)]
-    async fn on_keep_alive(&self, payload: models::KeepAliveMessage) -> Result<()> {
-        debug!(timestamp = payload.timestamp.to_string().as_str(), "🐈 purr…",);
-        Ok(())
-    }
-
-    #[instrument(level = "info", skip_all, fields(tracker_id = ?payload.tracker_id))]
-    async fn on_tracker_status(&self, payload: models::TrackerStatusMessage) -> Result<()> {
+    #[instrument(skip_all, fields(tracker_id = ?payload.tracker_id))]
+    async fn on_tracker_status(&self, payload: TrackerStatusMessage) -> Result<()> {
         let tracker_id = payload.tracker_id.to_lowercase();
         if let Some(hardware) = payload.hardware {
             self.on_hardware_update(&tracker_id, hardware).await?;
@@ -105,7 +101,7 @@ impl Service {
         Ok(())
     }
 
-    #[instrument(level = "info", skip_all)]
+    #[instrument(skip_all)]
     async fn on_hardware_update(&self, tracker_id: &str, hardware: HardwareEntry) -> Result<()> {
         info!(timestamp = ?hardware.timestamp, battery_level = hardware.battery_level, "⌚ hardware update️");
         let (is_timestamp_updated, _) = self
@@ -133,8 +129,8 @@ impl Service {
             .context("failed to push the hardware stream entry")
     }
 
-    #[instrument(level = "info", skip_all)]
-    async fn on_position_update(&self, tracker_id: &str, position: models::Position) -> Result<()> {
+    #[instrument(skip_all)]
+    async fn on_position_update(&self, tracker_id: &str, position: Position) -> Result<()> {
         let (latitude, longitude) = position.latlong;
         info!(
             timestamp = ?position.timestamp,
