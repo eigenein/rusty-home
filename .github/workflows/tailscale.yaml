@@ -21,7 +21,7 @@ jobs:
         with:
           key: ${{ secrets.SSH_KEY }}
           name: id_github
-          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          known_hosts: unnecessary
 
       - name: Try some SSH
         run: |
