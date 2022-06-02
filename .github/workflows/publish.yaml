@@ -108,10 +108,10 @@ jobs:
         run: |
           for host in blueberrypi cranberrypi strawberrypi
           do
-            echo "Deploying to $(tput setaf 2)$host(tput sgr0)…"
+            echo "Deploying to $host…"
             for filename in rusty-tractive rusty-tractive-telegram-bot
             do
-              echo "Syncing and restarting $(tput setaf 4)$filename(tput sgr0)…"
+              echo "Syncing and restarting $filename…"
               rsync -azP $filename $host:/home/pi/bin/$filename.arm-unknown-linux-gnueabihf
               ssh $host sudo systemctl restart $filename; systemctl status --lines=0 $filename
             done
