@@ -113,6 +113,6 @@ jobs:
             do
               echo "Syncing and restarting $filename…"
               rsync -az $filename $host:/home/pi/bin/$filename.arm-unknown-linux-gnueabihf
-              ssh $host sudo systemctl restart $filename
+              ssh $host "sudo systemctl restart $filename; systemctl status --lines=0 $filename"
             done
           done
