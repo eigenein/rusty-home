@@ -103,7 +103,14 @@ jobs:
               User pi
               StrictHostKeyChecking no
 
-      - name: Rsync
+      - name: Rsync and restart
         working-directory: ./target/arm-unknown-linux-gnueabihf/release
         run: |
-          rsync -avzP rusty-tractive blueberrypi:/home/pi/bin/rusty-tractive.arm-unknown-linux-gnueabihf
+          for host in blueberrypi cranberrypi strawberrypi
+          do
+            for filename in rusty-tractive rusty-tractive-telegram-bot
+            do
+              rsync -avzP $filename $host:/home/pi/bin/$filename.arm-unknown-linux-gnueabihf
+              ssh $host sudo systemctl restart $filename
+            done
+          done
