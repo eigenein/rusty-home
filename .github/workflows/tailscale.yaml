@@ -22,6 +22,10 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           name: id_github
           known_hosts: unnecessary
+          config: |
+            Host blueberrypi cranberrypi strawberrypi
+              User pi
+              StrictHostKeyChecking no
 
       - name: Try some SSH
         run: |
