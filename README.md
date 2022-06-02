@@ -23,7 +23,9 @@ Each host is running a set of microservices – ideally, all of them – via `sy
 - Liveness is monitored by [Better Uptime](https://betteruptime.com/), see also the «Heartbeat» sections in the `README`s
 - Logs are handled by `journald`
 - Configuration is synced by [Syncthing](https://syncthing.net/)
-- Deployments are automated with GitHub Actions, [`cross`](https://github.com/cross-rs/cross) and [Tailscale](https://tailscale.com/)
+- Deployments are [automated](.github/workflows/publish.yaml) with GitHub Actions, [`cross`](https://github.com/cross-rs/cross) and [Tailscale](https://tailscale.com/)
+
+Everything's using a free tier. 😉
 
 ## Available microservices
 
@@ -34,6 +36,8 @@ Each host is running a set of microservices – ideally, all of them – via `sy
 ## Installation
 
 For Raspberry Zero W you can grab the binaries from the [releases](https://github.com/eigenein/rusty-home/releases).
+
+Otherwise, build them with `cargo`:
 
 ```shell
 # Choose which binaries you'd like to install.
