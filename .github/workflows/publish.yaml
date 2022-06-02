@@ -112,7 +112,7 @@ jobs:
             for filename in rusty-tractive rusty-tractive-telegram-bot
             do
               echo "Syncing and restarting $filename…"
-              rsync -azP $filename $host:/home/pi/bin/$filename.arm-unknown-linux-gnueabihf
-              ssh $host sudo systemctl restart $filename; systemctl status --lines=0 $filename
+              rsync -az $filename $host:/home/pi/bin/$filename.arm-unknown-linux-gnueabihf
+              ssh $host sudo systemctl restart $filename
             done
           done
