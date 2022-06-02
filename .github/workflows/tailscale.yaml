@@ -1,0 +1,16 @@
+name: Tailscale
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tailscale:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
