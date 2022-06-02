@@ -86,3 +86,24 @@ jobs:
           SENTRY_PROJECT: "rusty-home"
         with:
           version: ${{ github.ref_name }}
+
+      - name: Set up Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: "1.24.2"
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: unnecessary
+          config: |
+            Host blueberrypi cranberrypi strawberrypi
+              User pi
+              StrictHostKeyChecking no
+
+      - name: Rsync
+        working-directory: ./target/arm-unknown-linux-gnueabihf/release
+        run: |
+          rsync -avzP rusty-tractive blueberrypi:/home/pi/bin/rusty-tractive.arm-unknown-linux-gnueabihf
