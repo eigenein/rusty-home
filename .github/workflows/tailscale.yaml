@@ -20,7 +20,6 @@ jobs:
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_KEY }}
-          name: id_github
           known_hosts: unnecessary
           config: |
             Host blueberrypi cranberrypi strawberrypi
