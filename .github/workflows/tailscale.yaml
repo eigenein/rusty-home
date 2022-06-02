@@ -16,5 +16,15 @@ jobs:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           version: "1.24.2"
 
-      - name: Show IP addresses
-        run: ip addr
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          name: id_github
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+      - name: Try some SSH
+        run: |
+          ssh pi@blueberrypi echo Hello
+          ssh pi@cranberrypi echo Hello
+          ssh pi@strawberrypi echo Hello
