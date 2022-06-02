@@ -23,6 +23,7 @@ Each host is running a set of microservices – ideally, all of them – via `sy
 - Liveness is monitored by [Better Uptime](https://betteruptime.com/), see also the «Heartbeat» sections in the `README`s
 - Logs are handled by `journald`
 - Configuration is synced by [Syncthing](https://syncthing.net/)
+- Deployments are automated with GitHub Actions, [`cross`](https://github.com/cross-rs/cross) and [Tailscale](https://tailscale.com/)
 
 ## Available microservices
 
