@@ -14,6 +14,7 @@ jobs:
         uses: tailscale/github-action@v1
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: "1.24.2"
 
       - name: Show IP addresses
         run: ip addr
