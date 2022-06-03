@@ -108,6 +108,7 @@ fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<R
             }
         },
         blocking: Blocking::Error,
+        tracing: true,
         ..Default::default()
     };
     Ok(config)

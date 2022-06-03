@@ -118,6 +118,7 @@ impl Service {
             info!("⌚ timestamp is not updated");
             return Ok(());
         }
+        info!("⌚ pushing new entry…");
         self.redis
             .client
             .xadd(
@@ -154,6 +155,7 @@ impl Service {
             info!("🎯 timestamp is not updated");
             return Ok(());
         }
+        info!("🎯 pushing new entry…");
         self.redis
             .client
             .xadd(

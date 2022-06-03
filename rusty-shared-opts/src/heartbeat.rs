@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use reqwest::{Client, Url};
-use tracing::{debug, instrument, warn};
+use tracing::{debug, info, instrument, warn};
 
 #[derive(Parser)]
 pub struct Opts {
@@ -34,6 +34,7 @@ impl Heartbeat {
     pub async fn send(&self) {
         match &self.endpoint {
             Some((client, url)) => {
+                info!("sending heartbeat…");
                 if let Err(error) = client.post(url.clone()).send().await {
                     warn!("heartbeat error: {:#}", error);
                 }
