@@ -127,7 +127,7 @@ impl Listener {
             .await?;
 
         for (stream_id, entries) in response {
-            info!(?stream_id, n_entries = entries.len());
+            info!(stream_id = ?stream_id.inner(), n_entries = entries.len());
             if stream_id == self.keys.position_stream {
                 for (entry_id, entry) in entries {
                     self.on_position_entry(&entry_id, entry.try_into()?).await?;
