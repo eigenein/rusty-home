@@ -114,24 +114,23 @@ impl Service {
             )
             .await
             .context("failed to update the last hardware timestamp")?;
+        info!("script done");
         if !is_timestamp_updated {
             info!("⌚ timestamp is not updated");
             return Ok(());
         }
         info!("⌚ pushing new entry…");
-        timeout(
-            time::Duration::from_secs(5),
-            self.redis.client.xadd(
+        self.redis
+            .client
+            .xadd(
                 hardware_stream_key(tracker_id),
                 false,
                 None,
                 format!("{}-0", hardware.timestamp.timestamp_millis()),
                 hardware.into_vec(),
-            ),
-        )
-        .await
-        .context("timeout while pushing the hardware stream entry")?
-        .context("failed to push the hardware stream entry")
+            )
+            .await
+            .context("failed to push the hardware stream entry")
     }
 
     #[instrument(skip_all)]
@@ -153,23 +152,22 @@ impl Service {
             )
             .await
             .context("failed to update the last position timestamp")?;
+        info!("script done");
         if !is_timestamp_updated {
             info!("🎯 timestamp is not updated");
             return Ok(());
         }
         info!("🎯 pushing new entry…");
-        timeout(
-            time::Duration::from_secs(5),
-            self.redis.client.xadd(
+        self.redis
+            .client
+            .xadd(
                 position_stream_key(tracker_id),
                 false,
                 None,
                 format!("{}-0", position.timestamp.timestamp_millis()),
                 PositionEntry::from(position).into_vec(),
-            ),
-        )
-        .await
-        .context("timeout while pushing the position stream entry")?
-        .context("failed to push the position stream entry")
+            )
+            .await
+            .context("failed to push the position stream entry")
     }
 }

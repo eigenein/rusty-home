@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use anyhow::{bail, Context, Result};
 use fred::prelude::*;
-use fred::types::{MultipleKeys, MultipleValues, RedisKey};
+use fred::types::{MultipleKeys, MultipleValues, PerformanceConfig, RedisKey};
 use tracing::{debug, info, instrument};
 
 pub struct Redis {
@@ -109,6 +109,10 @@ fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<R
         },
         blocking: Blocking::Error,
         tracing: true,
+        performance: PerformanceConfig {
+            pipeline: false,
+            ..Default::default()
+        },
         ..Default::default()
     };
     Ok(config)
