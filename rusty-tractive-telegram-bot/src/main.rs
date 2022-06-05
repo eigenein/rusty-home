@@ -31,8 +31,7 @@ async fn run(
 ) -> Result<()> {
     let bot_api = BotApi::new(service_opts.bot_token, std::time::Duration::from_secs(5))?;
     let me = methods::GetMe.call(&bot_api).await?;
-    let redis =
-        rusty_shared_redis::Redis::connect(&redis_opts.addresses, redis_opts.service_name).await?;
+    let redis = rusty_shared_redis::Redis::connect(&redis_opts.redis_url).await?;
 
     let tracker_id = service_opts.tracker_id.to_lowercase();
     let bot = { Bot::new(redis.clone().await?, bot_api.clone(), me.id) };

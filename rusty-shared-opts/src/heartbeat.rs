@@ -7,15 +7,15 @@ use tracing::{debug, info, instrument, warn};
 pub struct Opts {
     /// URL to which the microservice should post its heartbeat.
     #[clap(long = "heartbeat-url", env = "RUSTY_HOME_HEARTBEAT_URL")]
-    url: Option<String>,
+    heartbeat_url: Option<String>,
 }
 
 impl Opts {
     pub fn get_heartbeat(self) -> Result<Heartbeat> {
-        if self.url.is_none() {
+        if self.heartbeat_url.is_none() {
             warn!("heartbeat URL is not specified, heartbeat is disabled");
         }
-        self.url
+        self.heartbeat_url
             .map(|url| Ok(Heartbeat::new(Some((Client::new(), url.parse()?)))))
             .unwrap_or_else(|| Ok(Heartbeat::new(None)))
     }

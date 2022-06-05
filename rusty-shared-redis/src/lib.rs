@@ -1,12 +1,11 @@
 use std::fmt::Debug;
-use std::net::SocketAddr;
 use std::time;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use async_std::future::timeout;
 use fred::prelude::*;
 use fred::types::{MultipleKeys, MultipleValues, PerformanceConfig, RedisKey};
-use tracing::{debug, info, instrument};
+use tracing::{debug, instrument};
 
 pub struct Redis {
     pub client: RedisClient,
@@ -25,17 +24,27 @@ impl Redis {
     /// Thus, I put a short timeout on each `EVALSHA` call.
     const EVALSHA_TIMEOUT: time::Duration = time::Duration::from_secs(5);
 
-    #[instrument(skip_all, fields(n_addresses = addresses.len()))]
-    pub async fn connect(addresses: &[SocketAddr], service_name: String) -> Result<Self> {
-        let client = RedisClient::new(new_configuration(addresses, service_name)?);
-        client.client_setname("fred").await?; // TODO: use bin crate name.
+    #[instrument(skip_all, fields(url))]
+    pub async fn connect(url: &str) -> Result<Self> {
+        let config = {
+            let mut config = RedisConfig::from_url(url)?;
+            config.blocking = Blocking::Error;
+            config.tracing = true;
+            config.performance = PerformanceConfig {
+                pipeline: false,
+                ..Default::default()
+            };
+            config
+        };
+
+        let client = RedisClient::new(config);
         connect(&client).await?;
         let script_hashes = load_scripts(&client).await?;
-        let this = Self {
+
+        Ok(Self {
             client,
             script_hashes,
-        };
-        Ok(this)
+        })
     }
 
     #[instrument(skip_all)]
@@ -100,41 +109,6 @@ impl Redis {
         .context("timed out while calling set-if-not-equal")?
         .context("failed to set-if-not-equal")
     }
-}
-
-fn new_configuration(addresses: &[SocketAddr], service_name: String) -> Result<RedisConfig> {
-    let config = RedisConfig {
-        server: match addresses.len() {
-            0 => {
-                bail!("at least one address is required");
-            }
-            1 => {
-                info!("assuming centralized configuration");
-                ServerConfig::Centralized {
-                    host: addresses[0].ip().to_string(),
-                    port: addresses[0].port(),
-                }
-            }
-            _ => {
-                info!(service_name = ?service_name, "assuming Sentinel configuration");
-                ServerConfig::Sentinel {
-                    service_name,
-                    hosts: addresses
-                        .iter()
-                        .map(|address| (address.ip().to_string(), address.port()))
-                        .collect(),
-                }
-            }
-        },
-        blocking: Blocking::Error,
-        tracing: true,
-        performance: PerformanceConfig {
-            pipeline: false,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-    Ok(config)
 }
 
 #[instrument(skip_all)]

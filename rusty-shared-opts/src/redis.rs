@@ -1,23 +1,13 @@
-use std::net::SocketAddr;
-
 use clap::Parser;
 
 #[derive(Parser)]
 pub struct Opts {
-    /// One address is treated as Redis Server address, multiple addresses – as Sentinel addresses.
+    /// Redis URL.
+    /// See: https://docs.rs/fred/5.0.0/fred/types/struct.RedisConfig.html#method.from_url.
     #[clap(
-        long = "redis-server",
-        env = "RUSTY_HOME_REDIS_ADDRESSES",
-        default_value = "127.0.0.1:6379",
-        use_value_delimiter = true
+        long = "redis-url",
+        env = "RUSTY_HOME_REDIS_URL",
+        default_value = "redis://localhost/0"
     )]
-    pub addresses: Vec<SocketAddr>,
-
-    /// Redis Sentinel master name.
-    #[clap(
-        long = "redis-service-name",
-        env = "RUSTY_HOME_REDIS_SERVICE_NAME",
-        default_value = "mymaster"
-    )]
-    pub service_name: String,
+    pub redis_url: String,
 }
