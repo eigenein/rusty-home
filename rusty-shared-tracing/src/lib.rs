@@ -28,8 +28,7 @@ pub fn init(
     let sentry_layer = sentry::integrations::tracing::layer()
         .event_filter(|metadata| match metadata.level() {
             &Level::ERROR | &Level::WARN => EventFilter::Event,
-            &Level::INFO | &Level::DEBUG => EventFilter::Breadcrumb,
-            _ => EventFilter::Ignore,
+            &Level::INFO | &Level::DEBUG | &Level::TRACE => EventFilter::Breadcrumb,
         })
         .span_filter(|metadata| {
             matches!(metadata.level(), &Level::ERROR | &Level::WARN | &Level::INFO | &Level::DEBUG)
