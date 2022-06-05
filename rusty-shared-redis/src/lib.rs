@@ -28,6 +28,7 @@ impl Redis {
     #[instrument(skip_all, fields(n_addresses = addresses.len()))]
     pub async fn connect(addresses: &[SocketAddr], service_name: String) -> Result<Self> {
         let client = RedisClient::new(new_configuration(addresses, service_name)?);
+        client.client_setname("fred").await?; // TODO: use bin crate name.
         connect(&client).await?;
         let script_hashes = load_scripts(&client).await?;
         let this = Self {
