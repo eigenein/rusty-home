@@ -252,7 +252,7 @@ impl Listener {
         Ok(())
     }
 
-    #[instrument(skip_all, fields(current_level, last_level))]
+    #[instrument(skip_all, fields(current_level = current_level, last_level = last_level))]
     async fn on_battery_level_changed(
         &self,
         last_level: Option<u8>,

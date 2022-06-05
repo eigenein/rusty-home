@@ -19,7 +19,7 @@ pub trait Method: Debug + Sized + Serialize {
     const NAME: &'static str;
 
     /// Call the method on the specified connection.
-    #[instrument(level = "debug", skip_all, fields(method_name = Self::NAME))]
+    #[instrument(skip_all, fields(method_name = Self::NAME))]
     async fn call(&self, api: &BotApi) -> Result<Self::Output> {
         debug!(self = ?self);
         let text = api
@@ -67,7 +67,7 @@ impl Method for GetUpdates {
     const NAME: &'static str = "getUpdates";
 
     /// Needs to be implemented separately because of the timeout requirement.
-    #[instrument(level = "debug", skip_all, fields(method_name = Self::NAME))]
+    #[instrument(skip_all, fields(method_name = Self::NAME))]
     async fn call(&self, api: &BotApi) -> Result<Self::Output> {
         debug!(self = ?self, "starting the long polling request…");
         let text = api

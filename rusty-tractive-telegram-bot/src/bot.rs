@@ -27,7 +27,7 @@ pub struct Bot {
 impl Bot {
     const GET_UPDATES_TIMEOUT: time::Duration = time::Duration::from_secs(60);
 
-    #[instrument(skip_all, fields(bot_user_id))]
+    #[instrument(skip_all, fields(bot_user_id = bot_user_id))]
     pub fn new(redis: Redis, bot_api: BotApi, bot_user_id: i64) -> Self {
         Self {
             redis,
@@ -118,7 +118,7 @@ impl Bot {
     }
 
     /// Retrieves the bot API offset from which we should read the updates.
-    #[instrument(skip_all, fields(?self.offset_key))]
+    #[instrument(skip_all, fields(offset_key = ?self.offset_key))]
     async fn get_offset(&self) -> Result<u64> {
         let offset = self
             .redis
@@ -130,7 +130,7 @@ impl Bot {
         Ok(offset)
     }
 
-    #[instrument(skip_all, fields(offset))]
+    #[instrument(skip_all, fields(offset = offset))]
     async fn set_offset(&self, offset: u64) -> Result<()> {
         self.redis
             .client

@@ -24,7 +24,7 @@ impl Redis {
     /// Thus, I put a short timeout on each `EVALSHA` call.
     const EVALSHA_TIMEOUT: time::Duration = time::Duration::from_secs(5);
 
-    #[instrument(skip_all, fields(url))]
+    #[instrument(skip_all, fields(url = url))]
     pub async fn connect(url: &str) -> Result<Self> {
         let config = {
             let mut config = RedisConfig::from_url(url)?;
@@ -39,7 +39,7 @@ impl Redis {
 
         let client = RedisClient::new(config);
         connect(&client).await?;
-        client.client_setname("fred").await?; // FIXME: use bin crate name.
+        // TODO: client.client_setname("fred").await?; // FIXME: use bin crate name.
         let script_hashes = load_scripts(&client).await?;
 
         Ok(Self {
@@ -59,7 +59,7 @@ impl Redis {
         Ok(this)
     }
 
-    #[instrument(skip_all, fields(?key, group_name))]
+    #[instrument(skip_all, fields(key = ?key, group_name = group_name))]
     pub async fn create_consumer_group<K: Into<RedisKey> + Debug>(
         &self,
         key: K,
@@ -75,7 +75,7 @@ impl Redis {
         .context("failed to create the consumer group")
     }
 
-    #[instrument(skip_all, fields(?key))]
+    #[instrument(skip_all, fields(key = ?key))]
     pub async fn set_if_greater<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
     where
         K: Debug + Into<MultipleKeys>,
@@ -93,7 +93,7 @@ impl Redis {
         .context("failed to set-if-greater")
     }
 
-    #[instrument(skip_all, fields(?key))]
+    #[instrument(skip_all, fields(key = ?key))]
     pub async fn set_if_not_equal<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
     where
         K: Debug + Into<MultipleKeys>,
