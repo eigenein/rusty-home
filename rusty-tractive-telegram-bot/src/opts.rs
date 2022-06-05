@@ -18,9 +18,6 @@ pub struct Opts {
     pub heartbeat: heartbeat::Opts,
 
     #[clap(flatten)]
-    pub tracing: rusty_shared_opts::tracing::Opts,
-
-    #[clap(flatten)]
     pub service: ServiceOpts,
 }
 

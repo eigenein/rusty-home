@@ -17,7 +17,7 @@ mod opts;
 #[async_std::main]
 async fn main() {
     let opts: Opts = Opts::parse();
-    let _guard = rusty_shared_tracing::init(opts.tracing, opts.sentry).unwrap();
+    let _guard = rusty_shared_tracing::init(opts.sentry).unwrap();
 
     if let Err(error) = run(opts.redis, opts.heartbeat, opts.service).await {
         error!("fatal error: {:#}", error);
