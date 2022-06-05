@@ -1,7 +1,9 @@
 use std::fmt::Debug;
 use std::net::SocketAddr;
+use std::time;
 
 use anyhow::{bail, Context, Result};
+use async_std::future::timeout;
 use fred::prelude::*;
 use fred::types::{MultipleKeys, MultipleValues, PerformanceConfig, RedisKey};
 use tracing::{debug, info, instrument};
@@ -19,6 +21,10 @@ struct ScriptHashes {
 }
 
 impl Redis {
+    /// `EVALSHA` seems to get stuck on a master failure.
+    /// Thus, I put a short timeout on each `EVALSHA` call.
+    const EVALSHA_TIMEOUT: time::Duration = time::Duration::from_secs(5);
+
     #[instrument(skip_all, fields(n_addresses = addresses.len()))]
     pub async fn connect(addresses: &[SocketAddr], service_name: String) -> Result<Self> {
         let client = RedisClient::new(new_configuration(addresses, service_name)?);
@@ -42,19 +48,23 @@ impl Redis {
         Ok(this)
     }
 
-    #[instrument(skip_all, fields(key = ?key, group_name = group_name))]
+    #[instrument(skip_all, fields(?key, group_name))]
     pub async fn create_consumer_group<K: Into<RedisKey> + Debug>(
         &self,
         key: K,
         group_name: &str,
     ) -> Result<bool> {
-        self.client
-            .evalsha(&self.script_hashes.create_consumer_group, key, group_name)
-            .await
-            .context("script failed")
+        timeout(
+            Self::EVALSHA_TIMEOUT,
+            self.client
+                .evalsha(&self.script_hashes.create_consumer_group, key, group_name),
+        )
+        .await
+        .context("timeout while creating the consumer group")?
+        .context("failed to create the consumer group")
     }
 
-    #[instrument(skip_all, fields(key = ?key))]
+    #[instrument(skip_all, fields(?key))]
     pub async fn set_if_greater<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
     where
         K: Debug + Into<MultipleKeys>,
@@ -62,13 +72,17 @@ impl Redis {
         V: 'static + TryInto<MultipleValues>,
         V::Error: Into<RedisError>,
     {
-        self.client
-            .evalsha(&self.script_hashes.set_if_greater, key, value)
-            .await
-            .context("script failed")
+        timeout(
+            Self::EVALSHA_TIMEOUT,
+            self.client
+                .evalsha(&self.script_hashes.set_if_greater, key, value),
+        )
+        .await
+        .context("timed out while calling set-if-greater")?
+        .context("failed to set-if-greater")
     }
 
-    #[instrument(skip_all, fields(key = ?key))]
+    #[instrument(skip_all, fields(?key))]
     pub async fn set_if_not_equal<K, V>(&self, key: K, value: V) -> Result<(bool, Option<V>)>
     where
         K: Debug + Into<MultipleKeys>,
@@ -76,10 +90,14 @@ impl Redis {
         V: 'static + TryInto<MultipleValues>,
         V::Error: Into<RedisError>,
     {
-        self.client
-            .evalsha(&self.script_hashes.set_if_not_equal, key, value)
-            .await
-            .context("script failed")
+        timeout(
+            Self::EVALSHA_TIMEOUT,
+            self.client
+                .evalsha(&self.script_hashes.set_if_not_equal, key, value),
+        )
+        .await
+        .context("timed out while calling set-if-not-equal")?
+        .context("failed to set-if-not-equal")
     }
 }
 

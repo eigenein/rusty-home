@@ -1574,6 +1574,7 @@ name = "rusty-shared-redis"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-std",
  "fred",
  "tracing",
 ]

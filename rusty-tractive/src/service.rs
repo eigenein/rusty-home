@@ -114,7 +114,6 @@ impl Service {
             )
             .await
             .context("failed to update the last hardware timestamp")?;
-        info!("script done");
         if !is_timestamp_updated {
             info!("⌚ timestamp is not updated");
             return Ok(());
@@ -152,7 +151,6 @@ impl Service {
             )
             .await
             .context("failed to update the last position timestamp")?;
-        info!("script done");
         if !is_timestamp_updated {
             info!("🎯 timestamp is not updated");
             return Ok(());
