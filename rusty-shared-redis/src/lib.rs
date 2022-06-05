@@ -39,7 +39,7 @@ impl Redis {
 
         let client = RedisClient::new(config);
         connect(&client).await?;
-        client.client_setname("fred");
+        client.client_setname("fred").await?; // FIXME: use bin crate name.
         let script_hashes = load_scripts(&client).await?;
 
         Ok(Self {
