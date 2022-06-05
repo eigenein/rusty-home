@@ -39,6 +39,7 @@ impl Redis {
 
         let client = RedisClient::new(config);
         connect(&client).await?;
+        client.client_setname("fred");
         let script_hashes = load_scripts(&client).await?;
 
         Ok(Self {
