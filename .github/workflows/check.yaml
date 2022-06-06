@@ -46,4 +46,4 @@ jobs:
         continue-on-error: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-targets --all-features --tests
+          args: --all-targets --all-features
