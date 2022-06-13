@@ -23,8 +23,8 @@ Integrates [Tractive](https://tractive.com/) and streams the pet location and ha
 
 ## 💓 Heartbeat
 
-The heartbeat is expected every time the tracker status gets updated.
+The heartbeat is expected every time a channel message is received from Tractive server.
 
 | Expect a heartbeat every | with a grace period of |
 |--------------------------|------------------------|
-| 1 hour                   | 10 minutes             |
+| 10 minutes               | 1 minute               |

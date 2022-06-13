@@ -41,13 +41,14 @@ impl Service {
                     keep_alive_ttl = payload.keep_alive_ttl;
                 }
                 Message::KeepAlive(payload) => {
-                    debug!(timestamp = ?payload.timestamp, "🐈 purr…",);
+                    info!(timestamp = ?payload.timestamp, "🐈 purr…",);
                 }
                 Message::TrackerStatus(payload) => {
                     self.on_tracker_status(payload).await?;
                 }
                 _ => {}
             };
+            self.heartbeat.send().await;
         }
 
         bail!("the message stream has ended unexpectedly");
@@ -99,7 +100,6 @@ impl Service {
         if let Some(position) = payload.position {
             self.on_position_update(&tracker_id, position).await?;
         }
-        self.heartbeat.send().await;
         Ok(())
     }
 
