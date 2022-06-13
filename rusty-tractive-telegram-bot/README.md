@@ -18,4 +18,4 @@ The heartbeat is expected every time the tracker position gets updated.
 
 | Expect a heartbeat every | with a grace period of |
 |--------------------------|------------------------|
-| 1 hour                   | 10 minutes             |
+| 2 hours                  | 10 minutes             |
