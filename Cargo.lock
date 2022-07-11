@@ -322,16 +322,16 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.1.18"
+version = "3.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2dbdf4bdacb33466e854ce889eee8dfd5729abf7ccd7664d0a2d60cd384440b"
+checksum = "190814073e85d238f31ff738fcb0bf6910cedeb73376c87cd69291028966fd83"
 dependencies = [
  "atty",
  "bitflags",
  "clap_derive",
  "clap_lex",
  "indexmap",
- "lazy_static",
+ "once_cell",
  "strsim",
  "termcolor",
  "textwrap",
@@ -339,9 +339,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.1.18"
+version = "3.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25320346e922cffe59c0bbc5410c8d8784509efb321488971081313cb1e1a33c"
+checksum = "759bf187376e1afa7b85b959e6a664a3e7a95203415dba952ad19139e798f902"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -352,9 +352,9 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.2.0"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a37c35f1112dad5e6e0b1adaff798507497a18fceeb30cceb3bae7d1427b9213"
+checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
 dependencies = [
  "os_str_bytes",
 ]
@@ -964,9 +964,9 @@ dependencies = [
 
 [[package]]
 name = "kv-derive"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da1ccf9fb311f4101f712b39bc25e6519582a517a4f2418511193a739cae9a82"
+checksum = "3b687833223267d2b09bfc75371f607a8832e12d56cc8de2d295701bf220e085"
 dependencies = [
  "kv-derive-impl",
  "kv-derive-macro",
@@ -974,18 +974,18 @@ dependencies = [
 
 [[package]]
 name = "kv-derive-impl"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40d8cb53dba1b00271fe5077ec77436bd72649355ce44464ba49e9a7f7f38bbd"
+checksum = "ae6dd1ca5932442597cc124433fa7eada336a731bf0d8d93242392656abf3d11"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "kv-derive-macro"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be146a7bdfc6bd474694290d384701c001391fff517cf27a9ff04fbba4d950b2"
+checksum = "706c89f56a41191cdea3747abe7822f6d989c73efb15c5da38e0e1a4933daea1"
 dependencies = [
  "darling 0.14.1",
  "kv-derive-impl",
