@@ -6,6 +6,6 @@ description = "Shared Tractive structures and functions"
 
 [dependencies]
 chrono = "0.4.19"
-fred = { version = "5.0.0", default-features = false }
+fred = { version = "5.1.0", default-features = false }
 kv-derive = "1.0.1"
 serde = "1.0.137"
