@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
-async-std = { version = "1.11.0", default-features = false }
+async-std = { version = "1.12.0", default-features = false }
 fred = { version = "5.1.0", default-features = false, features = ["partial-tracing"] }
 tracing = "0.1.34"
