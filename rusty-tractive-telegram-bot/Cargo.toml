@@ -8,7 +8,7 @@ description = "🐈📲 Connects Rusty Tractive to Telegram"
 anyhow = "1.0.57"
 async-std = { version = "1.11.0", features = ["attributes", "tokio1"] }
 clap = { version = "3.2.8", features = ["cargo", "derive", "env"] }
-fred = { version = "5.0.0", default-features = false, features = ["partial-tracing"] }
+fred = { version = "5.1.0", default-features = false, features = ["partial-tracing"] }
 gethostname = "0.2.3"
 futures = { version = "0.3.21", default-features = false, features = ["std"] }
 new_string_template = "1.3.0"
