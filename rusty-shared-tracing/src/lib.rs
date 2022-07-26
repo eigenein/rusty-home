@@ -19,8 +19,8 @@ pub fn init(sentry_opts: rusty_shared_opts::sentry::Opts) -> Result<ClientInitGu
     ));
 
     sentry::configure_scope(|scope| {
-        // FIXME: this is always `rusty-shared-tracing`.
-        scope.set_tag("app.name", env!("CARGO_CRATE_NAME"));
+        let app_name = option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_CRATE_NAME"));
+        scope.set_tag("app.name", app_name);
     });
 
     let sentry_layer = sentry::integrations::tracing::layer()
