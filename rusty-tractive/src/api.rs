@@ -21,7 +21,7 @@ pub struct Api {
 }
 
 impl Api {
-    #[instrument(skip_all, err)]
+    #[instrument(skip_all)]
     pub fn new() -> Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -39,7 +39,7 @@ impl Api {
         Ok(Self { client })
     }
 
-    #[instrument(skip_all, fields(email = email), err)]
+    #[instrument(skip_all, fields(email = email))]
     pub async fn authenticate(&self, email: &str, password: &str) -> Result<Token> {
         let token: Token = self
             .client
@@ -61,7 +61,7 @@ impl Api {
         Ok(token)
     }
 
-    #[instrument(skip_all, fields(user_id = user_id), err)]
+    #[instrument(skip_all, fields(user_id = user_id))]
     pub async fn get_messages(
         &self,
         user_id: &str,
