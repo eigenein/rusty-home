@@ -11,7 +11,7 @@ use rusty_shared_telegram::headers::SecretToken;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use secstr::SecUtf8;
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use crate::middleware::TracingMiddleware;
 
@@ -58,10 +58,18 @@ async fn on_update(
     info!("👌 handling the update…");
 
     if !expected_secret_token.is_valid(&secret_token) {
-        warn!("secret token mismatch");
+        warn!("🙅 secret token mismatch");
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
+    if let Err(error) = handle_update(update, &bot_api).await {
+        error!("failed to handle the update: {:#}", error);
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn handle_update(update: models::Update, bot_api: &BotApi) -> Result<()> {
     match update.payload {
         models::UpdatePayload::Message(message) => match message.text {
             Some(text) if text.starts_with("/start") => {
@@ -71,7 +79,7 @@ async fn on_update(
                 )
                 .parse_mode(models::ParseMode::MarkdownV2)
                 .reply_to_message_id(message.id)
-                .call(&bot_api)
+                .call(bot_api)
                 .await?;
             }
             _ => {
@@ -82,7 +90,5 @@ async fn on_update(
             debug!(?payload, "ignoring the unsupported update");
         }
     }
-
-    info!("👍 handled");
-    Ok(StatusCode::NO_CONTENT)
+    Ok(())
 }
