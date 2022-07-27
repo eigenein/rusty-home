@@ -13,7 +13,7 @@ mod service;
 #[async_std::main]
 async fn main() -> Result<()> {
     let opts: Opts = Opts::parse();
-    let _guard = rusty_shared_tracing::init(opts.sentry).unwrap();
+    let _guard = rusty_shared_tracing::init(opts.sentry, env!("CARGO_BIN_NAME"))?;
 
     let service = Service {
         api: Api::new()?,

@@ -18,7 +18,7 @@ mod opts;
 #[async_std::main]
 async fn main() -> Result<()> {
     let opts: Opts = Opts::parse();
-    let _guard = rusty_shared_tracing::init(opts.sentry).unwrap();
+    let _guard = rusty_shared_tracing::init(opts.sentry, env!("CARGO_BIN_NAME"))?;
 
     let bot_api = BotApi::new(opts.service.bot_token, Duration::from_secs(5))?;
     let me = methods::GetMe.call(&bot_api).await?;

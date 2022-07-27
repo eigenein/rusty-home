@@ -8,7 +8,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-pub fn init(sentry_opts: rusty_shared_opts::sentry::Opts) -> Result<ClientInitGuard> {
+pub fn init(
+    sentry_opts: rusty_shared_opts::sentry::Opts,
+    app_name: &str,
+) -> Result<ClientInitGuard> {
     let guard = sentry::init((
         sentry_opts.dsn,
         ClientOptions {
@@ -19,7 +22,6 @@ pub fn init(sentry_opts: rusty_shared_opts::sentry::Opts) -> Result<ClientInitGu
     ));
 
     sentry::configure_scope(|scope| {
-        let app_name = option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_CRATE_NAME"));
         scope.set_tag("app.name", app_name);
     });
 
