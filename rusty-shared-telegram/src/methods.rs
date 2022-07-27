@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_with::{serde_as, DurationSeconds};
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 
 use crate::api::BotApi;
 use crate::models;
@@ -19,8 +19,9 @@ pub trait Method: Debug + Sized + Serialize {
     const NAME: &'static str;
 
     /// Call the method on the specified connection.
-    #[instrument(skip_all, fields(method_name = Self::NAME))]
+    #[instrument(skip_all, fields(NAME = Self::NAME))]
     async fn call(&self, api: &BotApi) -> Result<Self::Output> {
+        info!("call");
         debug!(self = ?self);
         let text = api
             .client
