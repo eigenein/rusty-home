@@ -57,7 +57,7 @@ impl Service {
     #[tracing::instrument(skip_all, fields(self.email = ?self.opts.email))]
     async fn get_authentication(&self) -> Result<(String, String)> {
         let key = format!("rusty:tractive:{}:authentication", self.opts.email);
-        let authentication: HashMap<String, String> = self.redis.client.hgetall(&key).await?;
+        let authentication: HashMap<String, String> = self.redis.pool.hgetall(&key).await?;
         let result = match (authentication.get("user_id"), authentication.get("access_token")) {
             (Some(user_id), Some(access_token)) => {
                 debug!("using the cached token");
@@ -76,13 +76,13 @@ impl Service {
         Ok(result)
     }
 
-    #[instrument(skip_all, fields(user_id = ?token.user_id))]
+    #[instrument(skip_all, fields(key = key, user_id = ?token.user_id))]
     async fn store_access_token(&self, key: &str, token: &Token) -> Result<()> {
         let values = vec![
             ("user_id", &token.user_id),
             ("access_token", &token.access_token),
         ];
-        let transaction = self.redis.client.multi(true).await?;
+        let transaction = self.redis.pool.multi(true).await?;
         transaction.hset(key, values).await?;
         transaction
             .expire_at(key, token.expires_at.timestamp())
@@ -100,6 +100,7 @@ impl Service {
         if let Some(position) = payload.position {
             self.on_position_update(&tracker_id, position).await?;
         }
+        info!("👍 completed");
         Ok(())
     }
 
@@ -120,7 +121,7 @@ impl Service {
         }
         info!("⌚ pushing new entry…");
         self.redis
-            .client
+            .pool
             .xadd(
                 hardware_stream_key(tracker_id),
                 false,
@@ -129,7 +130,8 @@ impl Service {
                 hardware.into_vec(),
             )
             .await
-            .context("failed to push the hardware stream entry")
+            .context("failed to push the hardware stream entry")?;
+        Ok(())
     }
 
     #[instrument(skip_all)]
@@ -157,7 +159,7 @@ impl Service {
         }
         info!("🎯 pushing new entry…");
         self.redis
-            .client
+            .pool
             .xadd(
                 position_stream_key(tracker_id),
                 false,
@@ -166,6 +168,7 @@ impl Service {
                 PositionEntry::from(position).into_vec(),
             )
             .await
-            .context("failed to push the position stream entry")
+            .context("failed to push the position stream entry")?;
+        Ok(())
     }
 }

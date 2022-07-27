@@ -114,7 +114,7 @@ impl Listener {
         #[allow(clippy::mutable_key_type)]
         let response: XReadResponse<RedisKey, String, String, String> = self
             .redis
-            .client
+            .pool
             .xreadgroup_map(
                 &self.group_name,
                 &self.consumer_name,
@@ -158,7 +158,7 @@ impl Listener {
 
         match self
             .redis
-            .client
+            .pool
             .get::<Option<i64>, _>(&self.keys.live_location_message_id)
             .await?
         {
@@ -182,7 +182,7 @@ impl Listener {
                 debug!(message_id, "updating the live location message ID…");
                 if self
                     .redis
-                    .client
+                    .pool
                     .set::<Option<()>, _, _>(
                         &self.keys.live_location_message_id,
                         message_id,
@@ -200,7 +200,7 @@ impl Listener {
                         .await?;
                     self.delete_old_messages().await?;
                     self.redis
-                        .client
+                        .pool
                         .rpush(&self.keys.pinned_message_ids, message_id)
                         .await?;
                 } else {
@@ -219,7 +219,7 @@ impl Listener {
     async fn delete_old_messages(&self) -> Result<()> {
         while let Some(message_id) = self
             .redis
-            .client
+            .pool
             .lpop::<Option<i64>, _>(&self.keys.pinned_message_ids, None)
             .await?
         {

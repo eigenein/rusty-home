@@ -3,12 +3,13 @@ use std::time;
 
 use anyhow::{Context, Result};
 use async_std::future::timeout;
+use fred::pool::RedisPool;
 use fred::prelude::*;
 use fred::types::{MultipleKeys, MultipleValues, PerformanceConfig, RedisKey};
 use tracing::{debug, instrument};
 
 pub struct Redis {
-    pub client: RedisClient,
+    pub pool: RedisPool,
     script_hashes: ScriptHashes,
 }
 
@@ -24,8 +25,8 @@ impl Redis {
     /// Thus, I put a short timeout on each `EVALSHA` call.
     const EVALSHA_TIMEOUT: time::Duration = time::Duration::from_secs(5);
 
-    #[instrument(skip_all, fields(url = url))]
-    pub async fn connect(url: &str) -> Result<Self> {
+    #[instrument(skip_all, fields(url = url, client_name = client_name))]
+    pub async fn connect(url: &str, client_name: &str) -> Result<Self> {
         let config = {
             let mut config = RedisConfig::from_url(url)?;
             config.blocking = Blocking::Error;
@@ -37,26 +38,15 @@ impl Redis {
             config
         };
 
-        let client = RedisClient::new(config);
-        connect(&client).await?;
-        // TODO: client.client_setname("fred").await?; // FIXME: use bin crate name.
-        let script_hashes = load_scripts(&client).await?;
+        let pool = RedisPool::new(config, 2)?;
+        connect(&pool).await?;
+        pool.client_setname(client_name).await?;
+        let script_hashes = load_scripts(&pool).await?;
 
         Ok(Self {
-            client,
+            pool,
             script_hashes,
         })
-    }
-
-    #[instrument(skip_all)]
-    pub async fn clone(&self) -> Result<Self> {
-        let client = self.client.clone_new();
-        connect(&client).await?;
-        let this = Self {
-            client,
-            script_hashes: self.script_hashes.clone(),
-        };
-        Ok(this)
     }
 
     #[instrument(skip_all, fields(key = ?key, group_name = group_name))]
@@ -67,7 +57,7 @@ impl Redis {
     ) -> Result<bool> {
         timeout(
             Self::EVALSHA_TIMEOUT,
-            self.client
+            self.pool
                 .evalsha(&self.script_hashes.create_consumer_group, key, group_name),
         )
         .await
@@ -85,7 +75,7 @@ impl Redis {
     {
         timeout(
             Self::EVALSHA_TIMEOUT,
-            self.client
+            self.pool
                 .evalsha(&self.script_hashes.set_if_greater, key, value),
         )
         .await
@@ -103,7 +93,7 @@ impl Redis {
     {
         timeout(
             Self::EVALSHA_TIMEOUT,
-            self.client
+            self.pool
                 .evalsha(&self.script_hashes.set_if_not_equal, key, value),
         )
         .await
@@ -113,7 +103,7 @@ impl Redis {
 }
 
 #[instrument(skip_all)]
-async fn connect(client: &RedisClient) -> Result<()> {
+async fn connect(client: &RedisPool) -> Result<()> {
     client.connect(None);
     debug!("awaiting connection…");
     client
@@ -125,7 +115,7 @@ async fn connect(client: &RedisClient) -> Result<()> {
 }
 
 #[instrument(skip_all)]
-async fn load_scripts(client: &RedisClient) -> Result<ScriptHashes> {
+async fn load_scripts(client: &RedisPool) -> Result<ScriptHashes> {
     let set_if_greater = client.script_load(SET_IF_GREATER_SCRIPT).await?;
     let create_consumer_group = client.script_load(CREATE_CONSUMER_GROUP).await?;
     let set_if_not_equal = client.script_load(SET_IF_NOT_EQUAL_SCRIPT).await?;

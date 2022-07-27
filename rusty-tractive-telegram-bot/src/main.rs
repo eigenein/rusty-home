@@ -16,14 +16,16 @@ mod middleware;
 mod opts;
 mod prelude;
 
+static BIN_NAME: &str = env!("CARGO_BIN_NAME");
+
 #[async_std::main]
 async fn main() -> Result<()> {
     let opts: Opts = Opts::parse();
-    let _guard = rusty_shared_tracing::init(opts.sentry, env!("CARGO_BIN_NAME"))?;
+    let _guard = rusty_shared_tracing::init(opts.sentry, BIN_NAME)?;
 
     let bot_api = BotApi::new(opts.service.bot_token, Duration::from_secs(5))?;
     let me = methods::GetMe.call(&bot_api).await?;
-    let redis = rusty_shared_redis::Redis::connect(&opts.redis.redis_url).await?;
+    let redis = rusty_shared_redis::Redis::connect(&opts.redis.redis_url, BIN_NAME).await?;
 
     let listener = {
         let bot_api = bot_api.clone();
