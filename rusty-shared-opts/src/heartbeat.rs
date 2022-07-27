@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use reqwest::{Client, Url};
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, instrument, warn};
 
 #[derive(Parser)]
 pub struct Opts {

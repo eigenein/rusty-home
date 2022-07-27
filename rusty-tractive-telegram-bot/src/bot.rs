@@ -56,7 +56,7 @@ async fn health() -> StatusCode {
 }
 
 #[handler]
-#[instrument(skip_all, fields(update.id = update.id))]
+#[instrument(skip_all)]
 async fn on_update(
     TypedHeader(SecretToken(secret_token)): TypedHeader<SecretToken>,
     Json(update): Json<models::Update>,
@@ -77,18 +77,12 @@ async fn on_update(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[instrument(skip_all, fields(update.id = update.id))]
 async fn handle_update(update: models::Update, bot_api: &BotApi) -> Result<()> {
     match update.payload {
-        models::UpdatePayload::Message(message) => match message.text {
+        models::UpdatePayload::Message(message) => match &message.text {
             Some(text) if text.starts_with("/start") => {
-                methods::SendMessage::new(
-                    message.chat.id,
-                    format!(r#"👋 Your chat ID is `{}`\."#, message.chat.id),
-                )
-                .parse_mode(models::ParseMode::MarkdownV2)
-                .reply_to_message_id(message.id)
-                .call(bot_api)
-                .await?;
+                on_start(bot_api, message).await?;
             }
             _ => {
                 debug!(?message.text, "ignoring the unsupported message");
@@ -98,5 +92,18 @@ async fn handle_update(update: models::Update, bot_api: &BotApi) -> Result<()> {
             debug!(?payload, "ignoring the unsupported update");
         }
     }
+    Ok(())
+}
+
+#[instrument(skip_all, fields(message.id = message.id))]
+async fn on_start(bot_api: &BotApi, message: models::Message) -> Result<()> {
+    methods::SendMessage::new(
+        message.chat.id,
+        format!(r#"👋 Your chat ID is `{}`\."#, message.chat.id),
+    )
+    .parse_mode(models::ParseMode::MarkdownV2)
+    .reply_to_message_id(message.id)
+    .call(bot_api)
+    .await?;
     Ok(())
 }
