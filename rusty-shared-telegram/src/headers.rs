@@ -1,10 +1,10 @@
 use poem::http::header::HeaderName;
 use poem::http::HeaderValue;
 use poem::web::headers::{Error, Header};
-use secstr::SecVec;
+use secstr::SecUtf8;
 
 #[derive(Clone)]
-pub struct SecretToken(pub SecVec<u8>);
+pub struct SecretToken(pub SecUtf8);
 
 static X_SECRET_TOKEN_NAME: HeaderName = HeaderName::from_static("x-telegram-bot-api-secret-token");
 
@@ -18,17 +18,22 @@ impl Header for SecretToken {
         Self: Sized,
         I: Iterator<Item = &'i HeaderValue>,
     {
-        let value = values.next().ok_or_else(Error::invalid)?;
-        if value.is_empty() {
-            return Err(Error::invalid());
-        }
-        hex::decode(value.as_bytes())
-            .map(SecVec::new)
-            .map(Self)
+        values
+            .next()
+            .ok_or_else(Error::invalid)?
+            .to_str()
             .map_err(|_| Error::invalid())
+            .map(SecUtf8::from)
+            .map(Self)
     }
 
     fn encode<E: Extend<HeaderValue>>(&self, _values: &mut E) {
         unimplemented!()
+    }
+}
+
+impl SecretToken {
+    pub fn is_valid(&self, secret_token: &SecUtf8) -> bool {
+        &self.0 == secret_token
     }
 }

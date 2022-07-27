@@ -51,14 +51,11 @@ impl Method for GetMe {
 }
 
 /// https://core.telegram.org/bots/api#setwebhook
-#[serde_as]
 #[derive(Debug, Serialize, Default)]
 pub struct SetWebhook<'a> {
     pub url: String,
     pub allowed_updates: Vec<AllowedUpdate>,
-
-    #[serde_as(as = "Option<serde_with::hex::Hex>")]
-    pub secret_token: Option<&'a [u8]>,
+    pub secret_token: Option<&'a str>,
 }
 
 impl<'a> Method for SetWebhook<'a> {
@@ -80,7 +77,7 @@ impl<'a> SetWebhook<'a> {
         self
     }
 
-    pub fn secret_token(mut self, secret_token: &'a [u8]) -> Self {
+    pub fn secret_token(mut self, secret_token: &'a str) -> Self {
         self.secret_token = Some(secret_token);
         self
     }

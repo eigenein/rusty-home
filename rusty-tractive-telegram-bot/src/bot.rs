@@ -6,15 +6,19 @@ use poem::listener::TcpListener;
 use poem::middleware::{AddData, Tracing};
 use poem::web::{Data, Json, TypedHeader};
 use poem::{handler, post, EndpointExt, Route, Server};
-use rand::Rng;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::headers::SecretToken;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
-use secstr::SecStr;
+use secstr::SecUtf8;
 use tracing::{debug, info, instrument, warn};
 
-pub async fn run(api: BotApi, bind_endpoint: String, webhook_url: String) -> Result<()> {
+pub async fn run(
+    api: BotApi,
+    bind_endpoint: String,
+    webhook_url: String,
+    secret_token: SecUtf8,
+) -> Result<()> {
     info!("setting up the bot…");
     methods::SetMyCommands::default()
         .command(models::BotCommand {
@@ -23,7 +27,6 @@ pub async fn run(api: BotApi, bind_endpoint: String, webhook_url: String) -> Res
         })
         .call(&api)
         .await?;
-    let secret_token = SecStr::new(rand::thread_rng().gen::<[u8; 32]>().into());
     methods::SetWebhook::new(webhook_url)
         .allow_update(methods::AllowedUpdate::Message)
         .secret_token(secret_token.unsecure())
@@ -52,7 +55,7 @@ async fn on_update(
 ) -> Result<StatusCode> {
     info!("👌 handling the update…");
 
-    if secret_token != (*expected_secret_token.0).0 {
+    if !expected_secret_token.is_valid(&secret_token) {
         warn!("secret token mismatch");
         return Ok(StatusCode::UNAUTHORIZED);
     }

@@ -1641,7 +1641,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "hex",
  "poem",
  "reqwest",
  "secstr",
@@ -1714,7 +1713,6 @@ dependencies = [
  "gethostname",
  "new_string_template",
  "poem",
- "rand",
  "rusty-shared-opts",
  "rusty-shared-redis",
  "rusty-shared-telegram",

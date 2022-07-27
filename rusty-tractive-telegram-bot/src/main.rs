@@ -30,9 +30,14 @@ async fn main() -> Result<()> {
         let battery_opts = opts.service.battery;
         Listener::new(redis, bot_api, heartbeat, me.id, &tracker_id, chat_id, battery_opts).await?
     };
-
-    let bot_future = bot::run(bot_api, opts.service.bind_endpoint, opts.service.webhook_url);
     let listener_future = listener.run();
+
+    let bot_future = bot::run(
+        bot_api,
+        opts.service.bind_endpoint,
+        opts.service.webhook_url,
+        opts.service.secret_token,
+    );
     try_join(bot_future, listener_future).await?;
     Ok(())
 }

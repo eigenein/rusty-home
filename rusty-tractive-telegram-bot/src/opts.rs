@@ -4,6 +4,7 @@ use anyhow::Error;
 use clap::Parser;
 use new_string_template::template::Template;
 use rusty_shared_opts::{heartbeat, redis, sentry};
+use secstr::SecUtf8;
 
 #[derive(Parser)]
 #[clap(author, version, about)]
@@ -38,6 +39,10 @@ pub struct ServiceOpts {
     /// Telegram Bot API [webhook](https://core.telegram.org/bots/webhooks) URL.
     #[clap(long, env = "RUSTY_TELEGRAM_BOT_WEBHOOK_URL")]
     pub webhook_url: String,
+
+    /// `X-Telegram-Bot-Api-Secret-Token` for [`setWebhook`](https://core.telegram.org/bots/api#setwebhook).
+    #[clap(long, env = "RUSTY_TELEGRAM_BOT_SECRET_TOKEN")]
+    pub secret_token: SecUtf8,
 
     /// Tractive tracker ID (case-insensitive).
     #[clap(long, env = "RUSTY_TRACTIVE_TRACKER_ID")]
