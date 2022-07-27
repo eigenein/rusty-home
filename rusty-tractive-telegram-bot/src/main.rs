@@ -1,16 +1,18 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use clap::Parser;
 use futures::future::try_join;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods;
 use rusty_shared_telegram::methods::Method;
-use std::time::Duration;
 
 use crate::listener::Listener;
 use crate::opts::Opts;
 
 mod bot;
 mod listener;
+mod middleware;
 mod opts;
 
 #[async_std::main]

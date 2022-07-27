@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use anyhow::Result;
 use poem::http::StatusCode;
 use poem::listener::TcpListener;
-use poem::middleware::{AddData, Tracing};
+use poem::middleware::AddData;
 use poem::web::{Data, Json, TypedHeader};
 use poem::{handler, post, EndpointExt, Route, Server};
 use rusty_shared_telegram::api::BotApi;
@@ -12,6 +12,8 @@ use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use secstr::SecUtf8;
 use tracing::{debug, info, instrument, warn};
+
+use crate::middleware::TracingMiddleware;
 
 pub async fn run(
     api: BotApi,
@@ -38,7 +40,7 @@ pub async fn run(
         .at("/", post(on_update))
         .with(AddData::new(api))
         .with(AddData::new(SecretToken(secret_token)))
-        .with(Tracing);
+        .with(TracingMiddleware);
     Server::new(TcpListener::bind(bind_endpoint))
         .run(app)
         .await?;
