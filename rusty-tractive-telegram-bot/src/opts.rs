@@ -23,9 +23,21 @@ pub struct Opts {
 
 #[derive(Parser)]
 pub struct ServiceOpts {
-    /// Telegram Bot API token.
+    /// Telegram Bot API access token.
     #[clap(long, env = "RUSTY_TELEGRAM_BOT_TOKEN")]
     pub bot_token: String,
+
+    /// Telegram Bot API [webhook](https://core.telegram.org/bots/webhooks) endpoint.
+    #[clap(
+        long,
+        env = "RUSTY_TELEGRAM_BOT_BIND_ENDPOINT",
+        default_value = "localhost:8081"
+    )]
+    pub bind_endpoint: String,
+
+    /// Telegram Bot API [webhook](https://core.telegram.org/bots/webhooks) URL.
+    #[clap(long, env = "RUSTY_TELEGRAM_BOT_WEBHOOK_URL")]
+    pub webhook_url: String,
 
     /// Tractive tracker ID (case-insensitive).
     #[clap(long, env = "RUSTY_TRACTIVE_TRACKER_ID")]

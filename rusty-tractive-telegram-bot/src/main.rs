@@ -6,7 +6,6 @@ use rusty_shared_telegram::methods;
 use rusty_shared_telegram::methods::Method;
 use std::time::Duration;
 
-use crate::bot::Bot;
 use crate::listener::Listener;
 use crate::opts::Opts;
 
@@ -23,18 +22,17 @@ async fn main() -> Result<()> {
     let me = methods::GetMe.call(&bot_api).await?;
     let redis = rusty_shared_redis::Redis::connect(&opts.redis.redis_url).await?;
 
-    let bot = Bot::new(redis.clone().await?, bot_api.clone(), me.id);
-    let listener = Listener::new(
-        redis,
-        bot_api,
-        opts.heartbeat.get_heartbeat()?,
-        me.id,
-        &opts.service.tracker_id.to_lowercase(),
-        opts.service.chat_id,
-        opts.service.battery,
-    )
-    .await?;
+    let listener = {
+        let bot_api = bot_api.clone();
+        let tracker_id = opts.service.tracker_id.to_lowercase();
+        let chat_id = opts.service.chat_id;
+        let heartbeat = opts.heartbeat.get_heartbeat()?;
+        let battery_opts = opts.service.battery;
+        Listener::new(redis, bot_api, heartbeat, me.id, &tracker_id, chat_id, battery_opts).await?
+    };
 
-    try_join(bot.run(), listener.run()).await?;
+    let bot_future = bot::run(bot_api, opts.service.bind_endpoint, opts.service.webhook_url);
+    let listener_future = listener.run();
+    try_join(bot_future, listener_future).await?;
     Ok(())
 }

@@ -49,6 +49,42 @@ impl Method for GetMe {
     const NAME: &'static str = "getMe";
 }
 
+/// https://core.telegram.org/bots/api#setwebhook
+#[serde_as]
+#[derive(Debug, Serialize, Default)]
+pub struct SetWebhook<'a> {
+    pub url: String,
+    pub allowed_updates: Vec<AllowedUpdate>,
+
+    #[serde_as(as = "Option<serde_with::hex::Hex>")]
+    pub secret_token: Option<&'a [u8]>,
+}
+
+impl<'a> Method for SetWebhook<'a> {
+    type Output = bool;
+
+    const NAME: &'static str = "setWebhook";
+}
+
+impl<'a> SetWebhook<'a> {
+    pub fn new(url: String) -> Self {
+        Self {
+            url,
+            ..Default::default()
+        }
+    }
+
+    pub fn allow_update(mut self, allowed_update: AllowedUpdate) -> Self {
+        self.allowed_updates.push(allowed_update);
+        self
+    }
+
+    pub fn secret_token(mut self, secret_token: &'a [u8]) -> Self {
+        self.secret_token = Some(secret_token);
+        self
+    }
+}
+
 #[serde_as]
 #[derive(Debug, Serialize)]
 pub struct GetUpdates {
