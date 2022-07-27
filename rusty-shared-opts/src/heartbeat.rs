@@ -35,7 +35,7 @@ impl Heartbeat {
     pub async fn send(&self) {
         match &self.endpoint {
             Some((client, url)) => {
-                info!("sending heartbeat…");
+                debug!("sending heartbeat…");
                 if let Err(error) = client.post(url.clone()).send().await {
                     warn!("heartbeat error: {:#}", error);
                 }
