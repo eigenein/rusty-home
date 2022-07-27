@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use async_std::future::timeout;
 use fred::pool::RedisPool;
 use fred::prelude::*;
-use fred::types::{MultipleKeys, MultipleValues, PerformanceConfig, RedisKey};
+use fred::types::{CustomCommand, MultipleKeys, MultipleValues, PerformanceConfig, RedisKey};
 use tracing::{debug, instrument};
 
 pub struct Redis {
@@ -40,7 +40,8 @@ impl Redis {
 
         let pool = RedisPool::new(config, 2)?;
         connect(&pool).await?;
-        pool.client_setname(client_name).await?;
+        pool.custom(CustomCommand::new_static("CLIENT SETNAME", None, true), vec![client_name])
+            .await?;
         let script_hashes = load_scripts(&pool).await?;
 
         Ok(Self {
