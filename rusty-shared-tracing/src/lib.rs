@@ -32,8 +32,8 @@ pub fn init(sentry_opts: rusty_shared_opts::sentry::Opts) -> Result<ClientInitGu
             matches!(metadata.level(), &Level::ERROR | &Level::WARN | &Level::INFO | &Level::DEBUG)
         });
 
-    let format_filter = EnvFilter::try_from_env("RUSTY_HOME_LOG")
-        .or_else(|_| EnvFilter::try_new("error,rusty_=info"))?;
+    let format_filter =
+        EnvFilter::try_from_env("RUSTY_HOME_LOG").or_else(|_| EnvFilter::try_new("info"))?;
     let format_layer = tracing_subscriber::fmt::layer()
         .without_time()
         .with_filter(format_filter);
