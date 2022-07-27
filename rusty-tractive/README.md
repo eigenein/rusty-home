@@ -23,8 +23,8 @@ Integrates [Tractive](https://tractive.com/) and streams the pet location and ha
 
 ## 💓 Heartbeat
 
-The heartbeat is expected every time a channel message is received from Tractive server.
+The heartbeat is expected every time a channel message is received from Tractive server. Keep-alive message are pretty frequent and normally come every 5 seconds or so.
 
 | Expect a heartbeat every | with a grace period of |
 |--------------------------|------------------------|
-| 10 minutes               | 1 minute               |
+| 1 minute                 | 1 minute               |
