@@ -14,7 +14,6 @@ const USER_AGENT: &str = concat!(
 pub struct BotApi {
     pub(crate) client: Client,
     pub(crate) base_url: String,
-    pub(crate) timeout: time::Duration,
 }
 
 impl BotApi {
@@ -27,7 +26,6 @@ impl BotApi {
         let this = Self {
             client,
             base_url: format!("https://api.telegram.org/bot{}", token),
-            timeout,
         };
         Ok(this)
     }

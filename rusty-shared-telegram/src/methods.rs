@@ -86,65 +86,6 @@ impl<'a> SetWebhook<'a> {
     }
 }
 
-#[serde_as]
-#[derive(Debug, Serialize)]
-pub struct GetUpdates {
-    pub offset: u64,
-
-    #[serde_as(as = "DurationSeconds<u64>")]
-    pub timeout: time::Duration,
-
-    pub allowed_updates: Vec<AllowedUpdate>,
-}
-
-#[async_trait]
-impl Method for GetUpdates {
-    type Output = Vec<models::Update>;
-
-    const NAME: &'static str = "getUpdates";
-
-    /// Needs to be implemented separately because of the timeout requirement.
-    #[instrument(skip_all, fields(method_name = Self::NAME))]
-    async fn call(&self, api: &BotApi) -> Result<Self::Output> {
-        debug!(self = ?self, "starting the long polling request…");
-        let text = api
-            .client
-            .post(format!("{}/{}", api.base_url, Self::NAME))
-            .json(self)
-            .timeout(api.timeout + self.timeout)
-            .send()
-            .await
-            .context("failed to send the request")?
-            .text_with_charset("utf-8")
-            .await?;
-
-        debug!(response.text = ?text, "completed the long polling request");
-        serde_json::from_str::<models::Response<Self::Output>>(&text)
-            .context("failed to deserialize response")?
-            .into()
-    }
-}
-
-impl GetUpdates {
-    pub fn new(timeout: time::Duration) -> Self {
-        Self {
-            timeout,
-            offset: 0,
-            allowed_updates: Vec::new(),
-        }
-    }
-
-    pub fn offset(mut self, offset: u64) -> Self {
-        self.offset = offset;
-        self
-    }
-
-    pub fn allowed_update(mut self, allowed_update: AllowedUpdate) -> Self {
-        self.allowed_updates.push(allowed_update);
-        self
-    }
-}
-
 #[derive(Debug, Serialize)]
 pub enum AllowedUpdate {
     #[serde(rename = "message")]
