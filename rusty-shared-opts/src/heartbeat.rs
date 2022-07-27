@@ -21,6 +21,7 @@ impl Opts {
     }
 }
 
+/// TODO: extract to a separate package. Use `governor`.
 pub struct Heartbeat {
     endpoint: Option<(Client, Url)>,
 }

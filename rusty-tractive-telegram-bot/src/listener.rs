@@ -1,7 +1,8 @@
+//! Implements Redis stream listener.
+
 use std::collections::HashMap;
 use std::time;
 
-use anyhow::{Context, Result};
 use fred::prelude::*;
 use fred::types::{RedisKey, XReadResponse, XID};
 use gethostname::gethostname;
@@ -10,12 +11,10 @@ use rusty_shared_redis::Redis;
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::methods::*;
 use rusty_shared_telegram::models::*;
-use rusty_shared_tractive::{
-    hardware_stream_key, position_stream_key, HardwareEntry, PositionEntry,
-};
-use tracing::{debug, error, info, instrument};
+use rusty_shared_tractive::*;
 
 use crate::opts::BatteryOpts;
+use crate::prelude::*;
 
 pub struct Listener {
     redis: Redis,
@@ -26,6 +25,7 @@ pub struct Listener {
     /// Target chat to which the updates will be posted.
     chat_id: ChatId,
 
+    /// Consumer name within the Redis group.
     consumer_name: String,
 
     /// Redis stream consumer group name.

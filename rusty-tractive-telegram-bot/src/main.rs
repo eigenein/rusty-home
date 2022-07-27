@@ -14,6 +14,7 @@ mod bot;
 mod listener;
 mod middleware;
 mod opts;
+mod prelude;
 
 #[async_std::main]
 async fn main() -> Result<()> {

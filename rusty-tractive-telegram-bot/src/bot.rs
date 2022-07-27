@@ -1,6 +1,7 @@
+//! Implements the Telegram bot logic.
+
 use std::borrow::Cow;
 
-use anyhow::Result;
 use poem::http::StatusCode;
 use poem::listener::TcpListener;
 use poem::middleware::AddData;
@@ -11,9 +12,9 @@ use rusty_shared_telegram::headers::SecretToken;
 use rusty_shared_telegram::methods::Method;
 use rusty_shared_telegram::{methods, models};
 use secstr::SecUtf8;
-use tracing::{debug, error, info, instrument, warn};
 
 use crate::middleware::TracingMiddleware;
+use crate::prelude::*;
 
 pub async fn run(
     api: BotApi,
