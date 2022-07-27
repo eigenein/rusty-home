@@ -19,9 +19,9 @@ pub trait Method: Debug + Sized + Serialize {
     const NAME: &'static str;
 
     /// Call the method on the specified connection.
-    #[instrument(skip_all, fields(NAME = Self::NAME))]
+    #[instrument(skip_all, fields(name = Self::NAME))]
     async fn call(&self, api: &BotApi) -> Result<Self::Output> {
-        info!("call");
+        info!("calling…");
         debug!(self = ?self);
         let text = api
             .client
