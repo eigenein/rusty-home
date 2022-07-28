@@ -38,10 +38,10 @@ pub async fn run(
 
     info!("running the bot…");
     let app = Route::new()
-        .at("/", post(on_update))
-        .at("/", head(health))
-        .at("/health", get(health))
-        .at("/health", head(health))
+        .at("/", post(post_update))
+        .at("/", head(get_health))
+        .at("/health", get(get_health))
+        .at("/health", head(get_health))
         .with(AddData::new(api))
         .with(AddData::new(SecretToken(secret_token)))
         .with(TracingMiddleware);
@@ -53,13 +53,13 @@ pub async fn run(
 
 #[handler]
 #[instrument(skip_all)]
-async fn health() -> StatusCode {
+async fn get_health() -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
 #[handler]
 #[instrument(skip_all)]
-async fn on_update(
+async fn post_update(
     TypedHeader(SecretToken(secret_token)): TypedHeader<SecretToken>,
     Json(update): Json<models::Update>,
     bot_api: Data<&BotApi>,
