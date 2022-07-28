@@ -6,7 +6,7 @@ use poem::http::StatusCode;
 use poem::listener::TcpListener;
 use poem::middleware::AddData;
 use poem::web::{Data, Json, TypedHeader};
-use poem::{get, handler, post, EndpointExt, Route, Server};
+use poem::{get, handler, head, post, EndpointExt, Route, Server};
 use rusty_shared_telegram::api::BotApi;
 use rusty_shared_telegram::headers::SecretToken;
 use rusty_shared_telegram::methods::Method;
@@ -39,7 +39,9 @@ pub async fn run(
     info!("running the bot…");
     let app = Route::new()
         .at("/", post(on_update))
+        .at("/", head(health))
         .at("/health", get(health))
+        .at("/health", head(health))
         .with(AddData::new(api))
         .with(AddData::new(SecretToken(secret_token)))
         .with(TracingMiddleware);
