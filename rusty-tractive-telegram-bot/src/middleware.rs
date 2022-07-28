@@ -1,7 +1,8 @@
 use poem::error::{MethodNotAllowedError, NotFoundError, ParsePathError, ParseQueryError};
 use poem::http::StatusCode;
 use poem::{Endpoint, IntoResponse, Middleware, Request, Response, Result};
-use tracing::{error, info, instrument};
+
+use crate::prelude::*;
 
 pub struct TracingMiddleware;
 
@@ -41,7 +42,7 @@ impl<E: Endpoint<Output = Response>> Endpoint for TracingMiddlewareImpl<E> {
                 Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
             }
             result => {
-                info!("ok");
+                debug!("ok");
                 result
             }
         }
