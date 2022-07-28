@@ -41,7 +41,7 @@ impl Service {
                     keep_alive_ttl = payload.keep_alive_ttl;
                 }
                 Message::KeepAlive(payload) => {
-                    info!(timestamp = ?payload.timestamp, "🐈 purr…",);
+                    debug!(timestamp = ?payload.timestamp, "🐈 purr…",);
                 }
                 Message::TrackerStatus(payload) => {
                     self.on_tracker_status(payload).await?;
