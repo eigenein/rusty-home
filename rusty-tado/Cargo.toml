@@ -5,5 +5,5 @@ edition = "2021"
 description = "🌡 Connects Rusty Home to tado°"
 
 [dependencies]
-anyhow = "1.0.57"
+anyhow = "1.0.61"
 async-std = { version = "1.11.0", features = ["attributes"] }
