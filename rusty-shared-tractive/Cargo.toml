@@ -8,4 +8,4 @@ description = "Shared Tractive structures and functions"
 chrono = "0.4.22"
 fred = { version = "5.1.0", default-features = false, features = ["no-client-setname"] }
 kv-derive = "1.0.1"
-serde = "1.0.137"
+serde = "1.0.143"
