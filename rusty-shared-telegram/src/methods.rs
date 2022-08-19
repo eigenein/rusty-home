@@ -77,7 +77,7 @@ impl<'a> SetWebhook<'a> {
         self
     }
 
-    pub fn secret_token(mut self, secret_token: &'a str) -> Self {
+    pub const fn secret_token(mut self, secret_token: &'a str) -> Self {
         self.secret_token = Some(secret_token);
         self
     }
@@ -118,12 +118,12 @@ impl SendMessage {
         }
     }
 
-    pub fn parse_mode(mut self, parse_mode: models::ParseMode) -> Self {
+    pub const fn parse_mode(mut self, parse_mode: models::ParseMode) -> Self {
         self.parse_mode = Some(parse_mode);
         self
     }
 
-    pub fn reply_to_message_id(mut self, reply_to_message_id: i64) -> Self {
+    pub const fn reply_to_message_id(mut self, reply_to_message_id: i64) -> Self {
         self.reply_to_message_id = Some(reply_to_message_id);
         self
     }
@@ -163,7 +163,7 @@ pub struct Location {
 }
 
 impl Location {
-    pub fn new(chat_id: models::ChatId, latitude: f64, longitude: f64) -> Self {
+    pub const fn new(chat_id: models::ChatId, latitude: f64, longitude: f64) -> Self {
         Self {
             chat_id,
             latitude,
@@ -173,7 +173,7 @@ impl Location {
         }
     }
 
-    pub fn horizontal_accuracy(mut self, horizontal_accuracy: f32) -> Self {
+    pub const fn horizontal_accuracy(mut self, horizontal_accuracy: f32) -> Self {
         self.horizontal_accuracy = Some(horizontal_accuracy);
         self
     }
@@ -202,14 +202,14 @@ impl Method for SendLocation {
 }
 
 impl SendLocation {
-    pub fn new(location: Location) -> Self {
+    pub const fn new(location: Location) -> Self {
         Self {
             location,
             live_period: None,
         }
     }
 
-    pub fn live_period(mut self, live_period: time::Duration) -> Self {
+    pub const fn live_period(mut self, live_period: time::Duration) -> Self {
         self.live_period = Some(live_period);
         self
     }
@@ -233,7 +233,7 @@ impl Method for EditMessageLiveLocation {
 }
 
 impl EditMessageLiveLocation {
-    pub fn new(chat_id: models::ChatId, message_id: i64, location: Location) -> Self {
+    pub const fn new(chat_id: models::ChatId, message_id: i64, location: Location) -> Self {
         Self {
             chat_id,
             message_id,
@@ -297,7 +297,7 @@ impl PinChatMessage {
         }
     }
 
-    pub fn disable_notification(mut self) -> Self {
+    pub const fn disable_notification(mut self) -> Self {
         self.disable_notification = true;
         self
     }

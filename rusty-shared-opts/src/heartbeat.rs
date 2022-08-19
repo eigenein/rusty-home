@@ -15,9 +15,10 @@ impl Opts {
         if self.heartbeat_url.is_none() {
             warn!("heartbeat URL is not specified, heartbeat is disabled");
         }
-        self.heartbeat_url
-            .map(|url| Ok(Heartbeat::new(Some((Client::new(), url.parse()?)))))
-            .unwrap_or_else(|| Ok(Heartbeat::new(None)))
+        self.heartbeat_url.map_or_else(
+            || Ok(Heartbeat::new(None)),
+            |url| Ok(Heartbeat::new(Some((Client::new(), url.parse()?)))),
+        )
     }
 }
 
@@ -27,7 +28,7 @@ pub struct Heartbeat {
 }
 
 impl Heartbeat {
-    pub fn new(endpoint: Option<(Client, Url)>) -> Self {
+    pub const fn new(endpoint: Option<(Client, Url)>) -> Self {
         Self { endpoint }
     }
 
